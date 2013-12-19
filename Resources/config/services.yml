@@ -1,0 +1,7 @@
+parameters:
+    tms_rest.service.links.class: Tms\Bundle\RestBundle\Service\Links
+
+services:
+   tms_rest.service.links:
+        class: tms_rest.service.links.class
+        arguments: []
