@@ -1,7 +1,10 @@
 parameters:
-    tms_rest.service.links.class: Tms\Bundle\RestBundle\Service\Links
+    tms_rest.criteria_builder.class: Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
+    tms_rest.entity_handler.class: Tms\Bundle\RestBundle\EntityHandler\EntityHandler
 
 services:
-   tms_rest.service.links:
-        class: tms_rest.service.links.class
-        arguments: []
+    tms_rest.criteria_builder:
+        class: %tms_rest.criteria_builder.class%
+
+    tms_rest.entity_handler:
+        class: %tms_rest.entity_handler.class%
