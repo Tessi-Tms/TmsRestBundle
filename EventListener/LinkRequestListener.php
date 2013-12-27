@@ -62,52 +62,24 @@ class LinkRequestListener
             return;
         }
 
-        $links  = array();
-        $header = $event->getRequest()->headers->get('link');
-
-        /*
-         * Due to limitations, multiple same-name headers are sent as comma
-         * separated values.
-         *
-         * This breaks those headers into Link headers following the format
-         * http://tools.ietf.org/html/rfc2068#section-19.6.2.4
-         */
-        while (preg_match('/^((?:[^"]|"[^"]*")*?),/', $header, $matches)) {
-            $header  = trim(substr($header, strlen($matches[0])));
-            $links[] = $matches[1];
-        }
-
-        if ($header) {
-            $links[] = $header;
-        }
-
+        $links = $this->getRequestLinksFromHeaders($event);
         $requestMethod = $this->urlMatcher->getContext()->getMethod();
-        // Force the GET method to avoid the use of the
-        // previous method (LINK/UNLINK)
+
+        // Force the GET method to avoid the use of the previous method (LINK/UNLINK)
         $this->urlMatcher->getContext()->setMethod('GET');
 
         // The controller resolver needs a request to resolve the controller.
         $stubRequest = new Request();
 
         foreach ($links as $index => $link) {
-            $linkParams = explode(';', trim($link));
-            $resource = array_shift($linkParams);
-            $resource = preg_replace('/<|>/', '', $resource);
-            $relation = array_shift($linkParams);
-            if (!preg_match('/^rel=\"[a-z]*\"$/', trim($relation), $matchRelation)) {
+            $links[$index] = null;
+            if (false === $route = $this->checkAndGetRoute($link)) {
                 continue;
             }
-            $relation = str_replace(array('rel=', '"'), '', $matchRelation[0]);
-
-            try {
-                $route = $this->urlMatcher->match($resource);
-            } catch (\Exception $e) {
-                // If we don't have a matching route we return
-                // the original Link header
+            if (false === $relation = $this->checkAndGetRelation($link)) {
                 continue;
             }
             $stubRequest->attributes->replace($route);
-
             if (false === $controller = $this->resolver->getController($stubRequest)) {
                 continue;
             }
@@ -117,10 +89,11 @@ class LinkRequestListener
             $controller = $subEvent->getController();
 
             $arguments = $this->resolver->getArguments($stubRequest, $controller);
+
             try {
                 $result = call_user_func_array($controller, $arguments);
                 $entityDecoded = json_decode($result->getContent(), true);
-                $links[$index] = $this->managers[$entityDecoded['class']]->findOneById($entityDecoded['data']['id']);
+                $links[$index] = $this->getManagerByClassName($entityDecoded['class'])->findOneById($entityDecoded['data']['id']);
             } catch (\Exception $e) {
                 continue;
             }
@@ -128,5 +101,91 @@ class LinkRequestListener
 
         $event->getRequest()->attributes->set('links', $links);
         $this->urlMatcher->getContext()->setMethod($requestMethod);
+    }
+
+    /**
+     * Get the manager of the given class name
+     *
+     * @param string $className
+     * @throws \Exception
+     * @return Object
+     */
+    private function getManagerByClassName($className)
+    {
+        if (!isset($this->managers[$className])) {
+            throw new \Exception(sprintf('Manager of class %s not found', $className));
+        }
+
+        return $this->managers[$className];
+    }
+
+    /**
+     * Extract the links in the request headers
+     *
+     * @param GetResponseEvent $event
+     * @return array
+     */
+    private function getRequestLinksFromHeaders(GetResponseEvent $event)
+    {
+        $links = array();
+        $header = $event->getRequest()->headers->get('link');
+
+        /*
+         * Due to limitations, multiple same-name headers are sent as comma
+        * separated values.
+        *
+        * This breaks those headers into Link headers following the format
+        * http://tools.ietf.org/html/rfc2068#section-19.6.2.4
+        */
+        while (preg_match('/^((?:[^"]|"[^"]*")*?),/', $header, $matches)) {
+            $header  = trim(substr($header, strlen($matches[0])));
+            $links[] = $matches[1];
+        }
+
+        if ($header) {
+            $links[] = $header;
+        }
+
+        return $links;
+    }
+
+    /**
+     * Get the resource route of a Link
+     *
+     * @param string $link
+     * @return boolean|string
+     */
+    private function checkAndGetRoute($link)
+    {
+        $linkExploded = explode(';', trim($link));
+        $resource = array_shift($linkExploded);
+        $resource = preg_replace('/<|>/', '', $resource);
+        try {
+            $route = $this->urlMatcher->match($resource);
+        } catch (\Exception $e) {
+            // If we don't have a matching route we return false
+            return false;
+        }
+
+        return $route;
+    }
+
+    /**
+     * Get the resource relation of a link
+     *
+     * @param string $link
+     * @return boolean|string
+     */
+    private function checkAndGetRelation($link)
+    {
+        $linkExploded = explode(';', trim($link));
+        $relation = array_pop($linkExploded);
+        if (!preg_match('/^rel=\"[_a-z]*\"$/', trim($relation), $matches)) {
+            // If the relation is not well formated, we return false
+            return false;
+        }
+        $relation = str_replace(array('rel=', '"'), '', $matches[0]);
+
+        return $relation;
     }
 }

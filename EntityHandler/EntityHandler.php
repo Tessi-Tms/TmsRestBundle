@@ -68,6 +68,50 @@ class EntityHandler
     }
 
     /**
+     * Link two entities according to the given mapping
+     *
+     * @param Object $entity
+     * @param Object $linkEntity
+     * @param array $linkMapping
+     * @return boolean
+     */
+    public function link($entity, $linkEntity, $linkMapping)
+    {
+        $isLinked = false;
+        $className = get_class($linkEntity);
+        if (isset($linkMapping[$className])) {
+            if (!$entity->$linkMapping[$className]['has']($linkEntity)) {
+                $entity->$linkMapping[$className]['add']($linkEntity);
+                $isLinked = true;
+            }
+        }
+
+        return $isLinked;
+    }
+
+    /**
+     * Unlink two entities according to the given mapping
+     *
+     * @param Object $entity
+     * @param Object $linkEntity
+     * @param array $linkMapping
+     * @return boolean
+     */
+    public function unlink($entity, $linkEntity, $linkMapping)
+    {
+        $isUnlinked = false;
+        $className = get_class($linkEntity);
+        if (isset($linkMapping[$className])) {
+            if ($entity->$linkMapping[$className]['has']($linkEntity)) {
+                $entity->$linkMapping[$className]['delete']($linkEntity);
+                $isUnlinked = true;
+            }
+        }
+
+        return $isUnlinked;
+    }
+
+    /**
      * Returns given word as CamelCased
      *
      * Converts a word like "send_email" to "SendEmail". It
