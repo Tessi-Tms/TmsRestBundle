@@ -1,7 +1,8 @@
 parameters:
-    tms_rest.criteria_builder.class: Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
-    tms_rest.orderby_builder.class: Tms\Bundle\RestBundle\OrderBy\OrderByBuilder
-    tms_rest.entity_handler.class: Tms\Bundle\RestBundle\EntityHandler\EntityHandler
+    tms_rest.criteria_builder.class:            Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
+    tms_rest.orderby_builder.class:             Tms\Bundle\RestBundle\OrderBy\OrderByBuilder
+    tms_rest.entity_handler.class:              Tms\Bundle\RestBundle\EntityHandler\EntityHandler
+    tms_rest.event_listener.link_request.class: Tms\Bundle\RestBundle\EventListener\LinkRequestListener
 
 services:
     tms_rest.criteria_builder:
@@ -12,3 +13,9 @@ services:
 
     tms_rest.entity_handler:
         class: %tms_rest.entity_handler.class%
+        
+    kernel.listener.link_request_listener:
+        class: %tms_rest.event_listener.link_request.class%
+        arguments: [@controller_resolver, @router]
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest }
