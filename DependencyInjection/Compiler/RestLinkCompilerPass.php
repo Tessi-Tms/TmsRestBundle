@@ -12,7 +12,6 @@ namespace Tms\Bundle\RestBundle\DependencyInjection\Compiler;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\DependencyInjection\DefinitionDecorator;
 
 class RestLinkCompilerPass implements CompilerPassInterface
 {
