@@ -76,7 +76,7 @@ class LinkRequestListener
             if (false === $route = $this->checkAndGetRoute($link)) {
                 continue;
             }
-            if (false === $relation = $this->checkAndGetRelation($link)) {
+            if (false === $this->checkRelation($link)) {
                 continue;
             }
             $stubRequest->attributes->replace($route);
@@ -171,21 +171,20 @@ class LinkRequestListener
     }
 
     /**
-     * Get the resource relation of a link
+     * Check the resource relation of a link
+     * If the relation is not well formated, we return false
      *
      * @param string $link
-     * @return boolean|string
+     * @return boolean
      */
-    private function checkAndGetRelation($link)
+    private function checkRelation($link)
     {
         $linkExploded = explode(';', trim($link));
         $relation = array_pop($linkExploded);
         if (!preg_match('/^rel=\"[_a-z]*\"$/', trim($relation), $matches)) {
-            // If the relation is not well formated, we return false
             return false;
         }
-        $relation = str_replace(array('rel=', '"'), '', $matches[0]);
 
-        return $relation;
+        return true;
     }
 }
