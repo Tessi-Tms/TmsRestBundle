@@ -27,6 +27,17 @@ class CriteriaBuilder
         foreach ($parameters as $name => $value) {
             if (null === $value) {
                 unset($parameters[$name]);
+                continue;
+            }
+
+            if (is_array($value)) {
+                foreach ($value as $k => $v) {
+                    try {
+                        $parameters[$name][$k] = unserialize($v);
+                    } catch(\Exception $e) {
+                        continue;
+                    }
+                }
             }
         }
 
