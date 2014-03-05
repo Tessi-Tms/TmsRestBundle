@@ -48,7 +48,7 @@ class CriteriaBuilder
 
         foreach ($parameters as $name => $value) {
             if ('limit' === $name) {
-                $parameters[$name] = $this->defineLimitParameter($value, $this->guessPaginationLimitByRoute($route));
+                $parameters[$name] = $this->defineLimitParameter($value, $this->guessPaginationByRoute($route));
                 continue;
             }
 
@@ -61,12 +61,12 @@ class CriteriaBuilder
     }
 
     /**
-     * Guess Pagination Limit by Route
+     * Guess Pagination by Route
      *
      * @param string $route
      * @return array
      */
-    private function guessPaginationLimitByRoute($route)
+    private function guessPaginationByRoute($route)
     {
         if (isset($this->pagination[$route])) {
             return $this->pagination[$route];
