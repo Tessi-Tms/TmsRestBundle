@@ -84,8 +84,14 @@ class CriteriaBuilder
     private function defineLimitParameter($originalValue, array $pagination)
     {
         if (null === $originalValue) {
+            if ($pagination['default'] > $pagination['maximum']) {
+                return $pagination['maximum'];
+            }
+
             return $pagination['default'];
-        } else if ($originalValue > $pagination['maximum']) {
+        }
+
+        if ($originalValue > $pagination['maximum']) {
             return $pagination['maximum'];
         }
 
