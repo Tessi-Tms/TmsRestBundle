@@ -48,7 +48,7 @@ class CriteriaBuilder
 
         foreach ($parameters as $name => $value) {
             if ('limit' === $name) {
-                $parameters[$name] = $this->defineLimitParameter($value, $this->guessPaginationByRoute($route));
+                $parameters[$name] = $this->defineLimitValue($value, $this->guessPaginationByRoute($route));
                 continue;
             }
 
@@ -63,12 +63,12 @@ class CriteriaBuilder
     /**
      * Guess Pagination by Route
      *
-     * @param string $route
+     * @param string|null $route
      * @return array
      */
-    private function guessPaginationByRoute($route)
+    private function guessPaginationByRoute($route = null)
     {
-        if (isset($this->pagination[$route])) {
+        if (null !== $route && isset($this->pagination[$route])) {
             return $this->pagination[$route];
         }
 
@@ -76,13 +76,13 @@ class CriteriaBuilder
     }
 
     /**
-     * Define the limit parameter according to the original value and the defined configuration of the pagination
+     * Define the limit value according to the original value and the defined configuration of the pagination
      *
-     * @param integer $originalValue
+     * @param mixed $originalValue
      * @param array $pagination
      * @return integer
      */
-    private function defineLimitParameter($originalValue, array $pagination)
+    private function defineLimitValue($originalValue, array $pagination)
     {
         if (null === $originalValue) {
             if ($pagination['default'] > $pagination['maximum']) {
@@ -92,7 +92,7 @@ class CriteriaBuilder
             return $pagination['default'];
         }
 
-        if ($originalValue > $pagination['maximum']) {
+        if (intval($originalValue) > $pagination['maximum']) {
             return $pagination['maximum'];
         }
 
