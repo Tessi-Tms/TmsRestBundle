@@ -26,7 +26,7 @@ class CriteriaBuilder
     /**
      * Constructor
      *
-     * @param array $configuration
+     * @param array $pagination
      */
     public function __construct(array $pagination)
     {
@@ -48,7 +48,7 @@ class CriteriaBuilder
 
         foreach ($parameters as $name => $value) {
             if ('limit' === $name) {
-                $parameters['limit'] = $this->defineLimitParameter($value, $this->guessPaginationLimitByRoute($route));
+                $parameters[$name] = $this->defineLimitParameter($value, $this->guessPaginationLimitByRoute($route));
                 continue;
             }
 
@@ -64,6 +64,7 @@ class CriteriaBuilder
      * Guess Pagination Limit by Route
      *
      * @param string $route
+     * @return array
      */
     private function guessPaginationLimitByRoute($route)
     {
