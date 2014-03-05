@@ -34,26 +34,21 @@ class CriteriaBuilder
     }
 
     /**
-     * Clean criteria according to a list of given parameters
+     * Clean the criteria according to a list of given parameters and eventually a route name
      *
-     * @param string $route
-     * @param array $parameters
+     * @param array        $parameters
+     * @param string|null  $route
      * @return array
      */
-    public function clean($route, array $parameters)
+    public function clean(array $parameters, $route = null)
     {
         if (!count($parameters)) {
             return $parameters;
         }
 
-        $paginationLimit = $this->guessPaginationLimitByRoute($route);
         foreach ($parameters as $name => $value) {
             if ('limit' === $name) {
-                if (null === $value) {
-                    $parameters[$name] = $paginationLimit['default'];
-                } else if ($value > $paginationLimit['maximum']) {
-                    $parameters[$name] = $paginationLimit['maximum'];
-                }
+                $parameters['limit'] = $this->defineLimitParameter($value, $this->guessPaginationLimitByRoute($route));
                 continue;
             }
 
@@ -77,5 +72,23 @@ class CriteriaBuilder
         }
 
         return $this->pagination['default_configuration'];
+    }
+
+    /**
+     * Define the limit parameter according to the original value and the defined configuration of the pagination
+     *
+     * @param integer $originalValue
+     * @param array $pagination
+     * @return integer
+     */
+    private function defineLimitParameter($originalValue, array $pagination)
+    {
+        if (null === $originalValue) {
+            return $pagination['default'];
+        } else if ($originalValue > $pagination['maximum']) {
+            return $pagination['maximum'];
+        }
+
+        return $originalValue;
     }
 }

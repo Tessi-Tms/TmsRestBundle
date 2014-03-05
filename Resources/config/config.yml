@@ -1,8 +1,8 @@
 tms_rest:
     default_configuration:
         pagination_limit:
-            default: 0
-            maximum: 100
+            default: 1
+            maximum: 5
     rest_templates__get_templates:
         pagination_limit:
             default: 3
