@@ -21,12 +21,10 @@ class PaginationCompilerPass implements CompilerPassInterface
     public function process(ContainerBuilder $container)
     {
         $configuration = $container->getParameter('tms_rest');
-        //var_dump($configuration);
 
         if (!$container->hasDefinition('tms_rest.criteria_builder')) {
             return;
         }
-
 
         $pagination = array();
         foreach ($configuration as $key => $config) {
@@ -40,6 +38,5 @@ class PaginationCompilerPass implements CompilerPassInterface
         $definition
             ->replaceArgument(0, $pagination);
         ;
-
     }
 }
