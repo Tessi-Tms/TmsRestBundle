@@ -27,6 +27,34 @@ class Configuration implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder();
 
+        $rootNode = $treeBuilder->root('tms_rest');
+
+        $rootNode
+            ->children()
+                ->arrayNode('default_configuration')
+                    ->children()
+                        ->arrayNode('pagination_limit')
+                            ->children()
+                                ->integerNode('default')->isRequired()->min(1)->end()
+                                ->integerNode('maximum')->isRequired()->min(1)->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end()
+            ->useAttributeAsKey('')
+            ->prototype('array')
+                ->children()
+                    ->arrayNode('pagination_limit')
+                        ->children()
+                            ->integerNode('default')->isRequired()->min(1)->end()
+                            ->integerNode('maximum')->isRequired()->min(1)->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end()
+        ;
+
         return $treeBuilder;
     }
 }

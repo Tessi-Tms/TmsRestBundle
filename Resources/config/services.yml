@@ -7,13 +7,14 @@ parameters:
 services:
     tms_rest.criteria_builder:
         class: %tms_rest.criteria_builder.class%
+        arguments: [null]
 
     tms_rest.sort_builder:
         class: %tms_rest.sort_builder.class%
 
     tms_rest.entity_handler:
         class: %tms_rest.entity_handler.class%
-        
+
     kernel.listener.link_request_listener:
         class: %tms_rest.event_listener.link_request.class%
         arguments: [@controller_resolver, @router]

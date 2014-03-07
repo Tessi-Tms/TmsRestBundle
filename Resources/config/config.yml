@@ -1,0 +1,5 @@
+tms_rest:
+    default_configuration:
+        pagination_limit:
+            default: 20
+            maximum: 200
