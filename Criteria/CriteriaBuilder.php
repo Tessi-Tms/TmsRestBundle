@@ -21,37 +21,36 @@ class CriteriaBuilder
      *     'maximum' => 100,
      * ))
      */
-    private $pagination;
+    protected $configuration;
 
     /**
      * Constructor
      *
-     * @param array $pagination
+     * @param array $configuration
      */
-    public function __construct(array $pagination)
+    public function __construct(array $configuration)
     {
-        $this->pagination = $pagination;
+        $this->configuration = $configuration;
     }
 
     /**
      * Clean the criteria according to a list of given parameters and eventually a route name
      *
      * @param array        $parameters
+     * @param int|null     $limit
      * @param string|null  $route
-     * @return array
      */
-    public function clean(array $parameters, $route = null)
+    public function clean(array &$parameters, &$limit = null, $route = null)
     {
         if (!count($parameters)) {
             return $parameters;
         }
 
-        foreach ($parameters as $name => $value) {
-            if ('limit' === $name) {
-                $parameters[$name] = $this->defineLimitValue($value, $this->guessPaginationByRoute($route));
-                continue;
-            }
+        if (null !== $limit) {
+            $limit = $this->defineLimitValue($limit, $this->guessPaginationByRoute($route));
+        }
 
+        foreach ($parameters as $name => $value) {
             if (null === $value) {
                 unset($parameters[$name]);
                 continue;
@@ -67,8 +66,6 @@ class CriteriaBuilder
                 }
             }
         }
-
-        return $parameters;
     }
 
     /**
@@ -79,22 +76,27 @@ class CriteriaBuilder
      */
     private function guessPaginationByRoute($route = null)
     {
-        if (null !== $route && isset($this->pagination[$route])) {
-            return $this->pagination[$route];
+        if (null === $route || count($this->configuration['routes']) == 0) {
+            return $this->configuration['default'];
         }
 
-        return $this->pagination['default_configuration'];
+        if (isset($this->configuration['routes'][$route])) {
+            return $this->configuration['routes'][$route];
+        }
+
+        return $this->configuration['default'];
     }
 
     /**
      * Define the limit value according to the original value and the defined configuration of the pagination
      *
      * @param mixed $originalValue
-     * @param array $pagination
+     * @param array $configuration
      * @return integer
      */
-    private function defineLimitValue($originalValue, array $pagination)
+    private function defineLimitValue($originalValue, array $configuration)
     {
+        $pagination = $configuration['pagination_limit'];
         if (null === $originalValue) {
             if ($pagination['default'] > $pagination['maximum']) {
                 return $pagination['maximum'];

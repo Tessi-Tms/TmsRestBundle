@@ -33,6 +33,6 @@ class TmsRestExtension extends Extension
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yml');
 
-        $container->setParameter('tms_rest', $config);
+        $container->setParameter('tms_rest.configuration', $config);
     }
 }

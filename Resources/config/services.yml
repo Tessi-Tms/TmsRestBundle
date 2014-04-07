@@ -7,7 +7,7 @@ parameters:
 services:
     tms_rest.criteria_builder:
         class: %tms_rest.criteria_builder.class%
-        arguments: [null]
+        arguments: [%tms_rest.configuration%]
 
     tms_rest.sort_builder:
         class: %tms_rest.sort_builder.class%
