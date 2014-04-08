@@ -1,16 +1,13 @@
-TmsRestBundle
-=============
+RestBundle
+===========================
 
-A service which brings support for "hypermedia" links for REST web services (based on FosRestBundle) and pagination.
+Symfony2 REST bundle
 
 
 Installation
 ------------
 
-To install this bundle please follow these steps:
-
-First, add the dependencies in your `composer.json` file:
-
+Add dependencies in your `composer.json` file:
 ```json
 "repositories": [
     ...,
@@ -25,81 +22,63 @@ First, add the dependencies in your `composer.json` file:
     },
 ```
 
-Then, install the bundle with the command:
-
+Install these new dependencies of your application:
 ```sh
-composer update
+$ php composer.phar update
 ```
 
 Enable the bundle in your application kernel:
-
 ```php
+<?php
 // app/AppKernel.php
 
 public function registerBundles()
 {
     $bundles = array(
-        //
+        // ...
         new Tms\Bundle\RestBundle\TmsRestBundle(),
     );
 }
 ```
 
-Import the configuration file of the bundle into your application.
-
+Import the bundle configuration:
 ```yml
 # app/config/config.yml
 
-- { resource: @TmsRestBundle/Resources/config/config.yml }
+imports:
+    - { resource: @TmsRestBundle/Resources/config/config.yml }
+```
+
+To check if every thing seem to be ok, you can execute this command:
+```sh
+$ php app/console container:debug
+```
+
+You'll get this result:
+```sh
+...
+tms_rest.criteria_builder   container Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
+tms_rest.entity_handler     container Tms\Bundle\RestBundle\EntityHandler\EntityHandler
+tms_rest.sort_builder       container Tms\Bundle\RestBundle\Sort\SortBuilder
+...
 ```
 
 
-Pagination
-----------
+Documentation
+-------------
+
+[Read the Documentation](Resources/doc/index.md)
 
 
-Edit the configuration file of your application in order to define some rules for the pagination of resources lists.
+Tests
+-----
 
-Here is an example for defining the behavior of the pagination of a list of templates (using FOS RestBundle): /api/rest/templates.json
-
-```yml
-# app/config/config.yml
-
-# TMS Rest
-tms_rest:
-    rest_templates__get_templates:    # The name of the route
-        pagination_limit:             
-            default: 50               # Default value for the QueryParam named "limit"
-            maximum: 100              # Maximum value allowed for the QueryParam named "limit"
+Install bundle dependencies:
+```sh
+$ php composer.phar update
 ```
 
-Then, a call to the API will return these results:
-
-
-/api/rest/templates.json           => 50 items
-
-/api/rest/templates.json?limit=10  => 10 items
-
-/api/rest/templates.json?limit=500 => 100 items
-
-
-Furthermore, the Rest Bundle provides a default configuration you can overwrite in you config.yml file.
-
-```yml
-tms_rest:
-    default_configuration:
-        pagination_limit:             
-            default: 20               # Default value for the QueryParam named "limit"
-            maximum: 200              # Maximum value allowed for the QueryParam named "limit"
+To execute unit tests:
+```sh
+$ phpunit --coverage-text
 ```
-
-So, if you did not have define a configuration for a particular route, a call to the API will return these results:
-
-
-/api/rest/templates.json           => 20 items
-
-/api/rest/templates.json?limit=10  => 10 items
-
-/api/rest/templates.json?limit=500 => 200 items
-
-

@@ -39,15 +39,23 @@ class CriteriaBuilder
      * @param array        $parameters
      * @param int|null     $limit
      * @param string|null  $route
+     * @param string|null  $orderbydirection
+     * @param string|null  $orderbycolumn
      */
-    public function clean(array &$parameters, &$limit = null, $route = null)
+    public function clean(array &$parameters, &$limit = null, $route = null, &$orderbydirection = 'ASC', &$orderbycolumn = 'id')
     {
         if (!count($parameters)) {
             return $parameters;
         }
 
-        if (null !== $limit) {
-            $limit = $this->defineLimitValue($limit, $this->guessPaginationByRoute($route));
+        $limit = $this->defineLimitValue($limit, $this->guessPaginationByRoute($route));
+
+        if(!in_array(strtolower($orderbydirection), array('asc', 'desc'))) {
+            $orderbydirection = 'asc';
+        }
+
+        if(!isset($orderbycolumn)) {
+            $orderbycolumn = 'id';
         }
 
         foreach ($parameters as $name => $value) {

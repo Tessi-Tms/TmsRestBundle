@@ -1,8 +1,10 @@
 parameters:
-    tms_rest.criteria_builder.class:            Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
-    tms_rest.sort_builder.class:                Tms\Bundle\RestBundle\Sort\SortBuilder
-    tms_rest.entity_handler.class:              Tms\Bundle\RestBundle\EntityHandler\EntityHandler
-    tms_rest.event_listener.link_request.class: Tms\Bundle\RestBundle\EventListener\LinkRequestListener
+    tms_rest.criteria_builder.class:                Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
+    tms_rest.sort_builder.class:                    Tms\Bundle\RestBundle\Sort\SortBuilder
+    tms_rest.entity_handler.class:                  Tms\Bundle\RestBundle\EntityHandler\EntityHandler
+    tms_rest.event_listener.link_request.class:     Tms\Bundle\RestBundle\EventListener\LinkRequestListener
+    tms_rest.formatter.hypermedia.single.class:     Tms\Bundle\RestBundle\Formatter\SingleHypermediaFormatter
+    tms_rest.formatter.hypermedia.collection.class: Tms\Bundle\RestBundle\Formatter\CollectionHypermediaFormatter
 
 services:
     tms_rest.criteria_builder:
@@ -14,6 +16,14 @@ services:
 
     tms_rest.entity_handler:
         class: %tms_rest.entity_handler.class%
+
+    tms.rest.formatter.hypermedia.single:
+        class: %tms_rest.formatter.hypermedia.single.class%
+        arguments: [@tms_rest.criteria_builder, @router, @tms_operation.manager.offer]
+        
+    tms.rest.formatter.hypermedia.collection:
+        class: %tms_rest.formatter.hypermedia.collection.class%
+        arguments: [@tms_rest.criteria_builder, @router, @tms_operation.manager.offer]
 
     kernel.listener.link_request_listener:
         class: %tms_rest.event_listener.link_request.class%

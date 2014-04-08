@@ -37,7 +37,7 @@ class Configuration implements ConfigurationInterface
                         ->arrayNode('pagination_limit')
                             ->addDefaultsIfNotSet()
                             ->children()
-                                ->integerNode('default')->defaultValue(1)->min(1)->end()
+                                ->integerNode('default')->defaultValue(20)->min(1)->end()
                                 ->integerNode('maximum')->defaultValue(50)->min(1)->end()
                             ->end()
                         ->end()
