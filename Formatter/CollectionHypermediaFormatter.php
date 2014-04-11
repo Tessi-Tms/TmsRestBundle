@@ -14,74 +14,77 @@ class CollectionHypermediaFormatter extends AbstractFormatter
 {
     protected $router;
     protected $tmsRestCriteriaBuilder;
-    protected $tmsOperationManagerOffer;
+    protected $tmsEntityManager;
 
-    public function __construct($router, $tmsRestCriteriaBuilder, $tmsOperationManagerOffer)
+    public function __construct($router, $tmsRestCriteriaBuilder)
     {
         $this->router = $router;
         $this->tmsRestCriteriaBuilder = $tmsRestCriteriaBuilder;
-        $this->tmsOperationManagerOffer = $tmsOperationManagerOffer;
     }
 
-    public function format(
-        $criteria,
-        $limit,
-        $route,
-        $orderbydirection,
-        $orderbycolumn,
-        $offset,
-        $page
-    )
+    public function setTmsEntityManager($tmsEntityManager)
     {
-        $this->restCriteriaBuilder->clean(
-            $criteria,
-            $limit,
-            $route,
-            $orderbydirection,
-            $orderbycolumn
+        $this->tmsEntityManager = $tmsEntityManager;
+
+        return $this;
+    }
+    
+    public function format($parameters, $route)
+    {
+        $this->tmsRestCriteriaBuilder->clean(
+            $parameters,
+            $route
         );
 
         $entities = $this
-            ->tmsOperationManagerOffer
+            ->tmsEntityManager
             ->findBy(
-                $criteria,
-                array($orderbycolumn => $orderbydirection),
-                $limit,
-                $offset
+                $parameters['criteria'],
+                array(
+                    $parameters['sort']['field'] =>
+                    $parameters['sort']['order']
+                ),
+                $parameters['limit'],
+                $parameters['offset']
             )
         ;
 
-        // TODO : OPTIMIZE COUNT FUNCTIONS!
-        $pageCount = count($entities);
+        // #######################################
+        // 
+        //    TODO : OPTIMIZE COUNT FUNCTION
+        // 
+        // #######################################
         $totalCount = $this
-            ->tmsOperationManagerOffer
-            ->count($criteria)
+            ->tmsEntityManager
+            ->count($parameters['criteria'])
         ;
 
         return array(
-            'metadata' => $this->formatMetadata(array(
-                $entities,
-                $pageCount,
+            'metadata' => $this->formatMetadata(
                 $totalCount,
-                $limit,
-                $offset,
-                $page
-            )),
+                $parameters['limit'],
+                $parameters['offset'],
+                $parameters['page']
+            ),
             'data'  => $this->formatData($entities),
-            'links' => $this->formatLinks($route, $page, $totalCount, $limit)
+            'links' => $this->formatLinks($route, $parameters['page'], $totalCount, $parameters['limit'])
         );
-        
     }
     
-    public function formatMetadata($entities, $pageCount, $totalCount, $limit, $offset, $page)
+    public function formatMetadata($totalCount, $limit, $offset, $page)
     {
         return array(
-            'type' => get_class($entities[0]),
-            'page' => $page,
-            'pageCount'  => $pageCount,
-            'totalCount' => $totalCount,
-            'limit'  => $limit,
-            'offset' => $offset
+            'type'          => $this->tmsEntityManager->getEntityClass(),
+            'page'          => $page,
+            'pageCount'     => 
+            $this->computePageCount(
+                $totalCount,
+                $offset,
+                $limit
+            ),
+            'totalCount'    => $totalCount,
+            'limit'         => $limit,
+            'offset'        => $offset
         );
     }
     
@@ -96,20 +99,20 @@ class CollectionHypermediaFormatter extends AbstractFormatter
             'self' => array(
                 'href' => $this->router->generate($route)
             ),
-            'next' => $this->generateListNextLink(
+            'next' => $this->generateNextLink(
                 $route,
                 $page,
                 $totalCount,
                 $limit
             ),
-            'previous' => $this->generateListPreviousLink(
+            'previous' => $this->generatePreviousLink(
                 $route,
                 $page
             )
         );
     }
     
-    public function generateListNextLink($route, $currentPage, $totalCount, $limit)
+    public function generateNextLink($route, $currentPage, $totalCount, $limit)
     {
         if ($currentPage + 1 > ceil($totalCount / $limit)) {
             return '';
@@ -117,24 +120,31 @@ class CollectionHypermediaFormatter extends AbstractFormatter
 
         return $this
             ->router
-            ->generate(
-                $route,
-                array('page' => $currentPage+1)
-            )
+            ->generate($route, array('page' => $currentPage+1))
         ;
     }
 
-    public function generateListPreviousLink($route, $currentPage) {
+    public function generatePreviousLink($route, $currentPage) {
         if ($currentPage - 1 < 1) {
             return '';
         }
 
         return $this
             ->router
-            ->generate(
-                $route,
-                array('page' => $currentPage-1)
-            )
+            ->generate($route, array('page' => $currentPage-1))
         ;
+    }
+    
+    public function computePageCount($totalCount, $offset, $limit)
+    {
+        if($offset > $totalCount) {
+            return 0;
+        } else {
+            if($totalCount-$offset > $limit) {
+                return $limit;
+            } else {
+               return $totalCount-$offset; 
+            }
+        }
     }
 }

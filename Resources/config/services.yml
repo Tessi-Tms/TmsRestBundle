@@ -19,11 +19,11 @@ services:
 
     tms.rest.formatter.hypermedia.single:
         class: %tms_rest.formatter.hypermedia.single.class%
-        arguments: [@tms_rest.criteria_builder, @router, @tms_operation.manager.offer]
+        arguments: [@router, @tms_rest.criteria_builder]
         
     tms.rest.formatter.hypermedia.collection:
         class: %tms_rest.formatter.hypermedia.collection.class%
-        arguments: [@tms_rest.criteria_builder, @router, @tms_operation.manager.offer]
+        arguments: [@router, @tms_rest.criteria_builder]
 
     kernel.listener.link_request_listener:
         class: %tms_rest.event_listener.link_request.class%

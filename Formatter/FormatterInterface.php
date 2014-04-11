@@ -12,5 +12,5 @@ namespace Tms\Bundle\RestBundle\Formatter;
 
 interface FormatterInterface
 {
-    public function format();
+    public function format($parameters, $route);
 }

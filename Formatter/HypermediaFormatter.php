@@ -12,8 +12,7 @@ namespace Tms\Bundle\RestBundle\Formatter;
 
 class HypermediaFormatter extends AbstractFormatter
 {
-    public function format()
+    public function format($parameters, $route)
     {
-        
     }
 }
