@@ -37,23 +37,23 @@ class CriteriaBuilder
      * Clean the criteria according to a list of given parameters and eventually a route name
      *
      * @param array        $parameters
-     * @param int|null     $limit
      * @param string|null  $route
      */
-    public function clean(array &$parameters, &$limit = null, $route = null)
+    public function clean(array $parameters, $route = null)
     {
         if (!count($parameters)) {
             return $parameters;
-        }
-
-        if (null !== $limit) {
-            $limit = $this->defineLimitValue($limit, $this->guessPaginationByRoute($route));
         }
 
         foreach ($parameters as $name => $value) {
             if (null === $value) {
                 unset($parameters[$name]);
                 continue;
+            }
+            
+            if ('limit' === $name) {
+                 $parameters[$name] = $this->defineLimitValue($value, $this->guessPaginationByRoute($route));
+                 continue;
             }
 
             if (is_array($value)) {
@@ -66,6 +66,8 @@ class CriteriaBuilder
                 }
             }
         }
+
+        return $parameters;
     }
 
     /**
