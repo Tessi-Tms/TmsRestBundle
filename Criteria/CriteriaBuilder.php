@@ -46,14 +46,14 @@ class CriteriaBuilder
         }
 
         foreach ($parameters as $name => $value) {
-            if (null === $value) {
-                unset($parameters[$name]);
-                continue;
-            }
-            
             if ('limit' === $name) {
                  $parameters[$name] = $this->defineLimitValue($value, $this->guessPaginationByRoute($route));
                  continue;
+            }
+
+            if (null === $value) {
+                unset($parameters[$name]);
+                continue;
             }
 
             if (is_array($value)) {
