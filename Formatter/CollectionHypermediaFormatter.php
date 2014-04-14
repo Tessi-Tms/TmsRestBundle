@@ -16,10 +16,11 @@ class CollectionHypermediaFormatter extends AbstractFormatter
     protected $tmsRestCriteriaBuilder;
     protected $tmsEntityManager;
 
-    public function __construct($router, $tmsRestCriteriaBuilder)
+    public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
     {
         $this->router = $router;
         $this->tmsRestCriteriaBuilder = $tmsRestCriteriaBuilder;
+        parent::__construct($serializer);
     }
 
     public function setTmsEntityManager($tmsEntityManager)

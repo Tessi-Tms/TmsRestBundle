@@ -8,20 +8,22 @@
  *
  */
 
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-
 namespace Tms\Bundle\RestBundle\Formatter;
+
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class SingleHypermediaFormatter extends AbstractFormatter
 {
     protected $router;
     protected $tmsRestCriteriaBuilder;
     protected $tmsEntityManager;
+    protected $associations;
 
-    public function __construct($router, $tmsRestCriteriaBuilder)
+    public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
     {
         $this->router = $router;
         $this->tmsRestCriteriaBuilder = $tmsRestCriteriaBuilder;
+        parent::__construct($serializer);
     }
 
     public function setTmsEntityManager($tmsEntityManager)
@@ -33,32 +35,99 @@ class SingleHypermediaFormatter extends AbstractFormatter
 
     public function format($parameters, $route)
     {
-        $entity = $this->tmsEntityManager->findOneById($parameters['id']);
+        $entity = $this->tmsEntityManager->findOneById($parameters['singleId']);
         if (!$entity) {
             throw new NotFoundHttpException("Entity not found.");
         }
+
+        $data = array();
+        $data['metadata'] = $this->formatMetadata();
+        $data['data']     = $this->formatData($entity);
+        $data['links']    = $this->formatLinks($route, $entity->getId());
+
+        if(isset($parameters['embedded'])) {
+            $this->guessEntityAssociations();
+
+            foreach($parameters['embedded'] as $embeddedName => $embeddedRoutes) {
+                $data['embedded'][$embeddedName] = $this->addEmbedded(
+                    $entity,
+                    $embeddedName,
+                    $embeddedRoutes['singleRoute'],
+                    $embeddedRoutes['collectionRoute']
+                );
+            }
+        }
         
-        return array(
-            'metadata'  => $this->formatMetadata(),
-            'data'      => $this->formatData($entity),
-            'links'     => $this->formatLinks($route, $parameters['id']),
-            'embedded'  => array()
-//                'products' => array(array(
-//                    'metadata' => array(
-//                        'type' => get_class($products[0])
-//                    ),
-//                    'data' => $this->serializeEmbeddedEntities('api_products_get_product', $products),
-//                    'links' => array(
-//                        'self' => array(
-//                            'href' => $this->get('router')
-//                                        ->generate(
-//                                            'api_offers_get_offer_products',
-//                                            array('id' => $entity->getId())
-//                                        )
-//                        )
-//                    ),
-//                )
-        );
+        return $data;
+    }
+    
+    public function guessEntityAssociations()
+    {
+        $this->associations = $this
+            ->tmsEntityManager
+            ->getEntityManager()
+            ->getClassMetadata($this->tmsEntityManager->getEntityClass())
+            ->associationMappings;
+    }
+
+    public function addEmbedded($singleEntity, $embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
+    {
+        if(array_key_exists($embeddedName, $this->associations)) {
+            $retrieveEmbeddedMethod = $this->guessRetrieveEmbeddedMethod($embeddedName);
+            $embeddedEntities = $singleEntity->$retrieveEmbeddedMethod();
+
+            return array(
+                'metadata' => array(
+                    'type' => get_class($embeddedEntities[0])
+                ),
+                'data'  => $this->formatEmbedded($embeddedSingleRoute, $embeddedEntities),
+                'links' => array(
+                    'self' => array(
+                        'href' => $this
+                            ->router
+                            ->generate(
+                                $embeddedCollectionRoute,
+                                array('id' => $singleEntity->getId())
+                            )
+                    )
+                )
+            );
+        }
+    }
+    
+    public function guessRetrieveEmbeddedMethod($embeddedName)
+    {
+        return sprintf("get%s", ucfirst($embeddedName));
+    }
+
+    public function formatEmbedded($embeddedSingleRoute, $embeddedEntities)
+    {
+        $formattedEntities = array();
+        
+        foreach($embeddedEntities as $entity) {
+            array_push($formattedEntities, array(
+                'data' => $this
+                    ->serializer
+                    ->serialize(
+                        $entity, 
+                        'json', 
+                        \JMS\Serializer\SerializationContext::create()->setGroups(array('list'))
+                    ),
+                'links' => array(
+                    'self' => array(
+                        'href' => $this
+                            ->router
+                            ->generate(
+                                $embeddedSingleRoute,
+                                array('id' => $entity->getId())
+                            )
+                    )
+                ),
+                'metadata' => array()
+            ));
+        }
+
+        return $formattedEntities;
     }
 
     public function formatMetadata()
@@ -77,7 +146,7 @@ class SingleHypermediaFormatter extends AbstractFormatter
     {
         return array(
             'self' => array(
-                'href' => $this->get('router')
+                'href' => $this->router
                     ->generate(
                         $route,
                         array('id' => $id)

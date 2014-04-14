@@ -37,13 +37,13 @@ class CriteriaBuilder
      * @param array        $parameters
      * @param string|null  $route
      */
-    public function clean(array &$parameters, $route = null)
+    public function clean(array &$parameters, $currentRoute = null)
     {
         if (!count($parameters)) {
             return $parameters;
         }
 
-        $this->guessPaginationByRoute($route);
+        $this->guessPaginationByRoute($currentRoute);
 
         $parameters['limit']  = $this->defineLimitValue($parameters['limit']);
         $parameters['sort']   = $this->defineSortValue($parameters['sort']);
