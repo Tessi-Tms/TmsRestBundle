@@ -12,15 +12,9 @@ namespace Tms\Bundle\RestBundle\Formatter;
 
 class CollectionHypermediaFormatter extends AbstractFormatter
 {
-    protected $router;
-    protected $tmsRestCriteriaBuilder;
-    protected $tmsEntityManager;
-
     public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
     {
-        $this->router = $router;
-        $this->tmsRestCriteriaBuilder = $tmsRestCriteriaBuilder;
-        parent::__construct($serializer);
+        parent::__construct($router, $tmsRestCriteriaBuilder, $serializer);
     }
 
     public function setTmsEntityManager($tmsEntityManager)
@@ -30,11 +24,11 @@ class CollectionHypermediaFormatter extends AbstractFormatter
         return $this;
     }
     
-    public function format($parameters, $route)
+    public function format($parameters, $routeName, $format)
     {
         $this->tmsRestCriteriaBuilder->clean(
             $parameters,
-            $route
+            $routeName
         );
 
         $entities = $this
@@ -68,17 +62,22 @@ class CollectionHypermediaFormatter extends AbstractFormatter
                 $parameters['page']
             ),
             'data'  => $this->formatData($entities),
-            'links' => $this->formatLinks($route, $parameters['page'], $totalCount, $parameters['limit'])
+            'links' => $this->formatLinks(
+                $routeName,
+                $format,
+                $parameters['page'],
+                $totalCount,
+                $parameters['limit']
+            )
         );
     }
-    
+
     public function formatMetadata($totalCount, $limit, $offset, $page)
     {
         return array(
             'type'          => $this->tmsEntityManager->getEntityClass(),
             'page'          => $page,
-            'pageCount'     => 
-            $this->computePageCount(
+            'pageCount'     => $this->computePageCount(
                 $totalCount,
                 $offset,
                 $limit
@@ -94,46 +93,62 @@ class CollectionHypermediaFormatter extends AbstractFormatter
         return $entities;
     }
     
-    public function formatLinks($route, $page, $totalCount, $limit)
+    public function formatLinks($routeName, $format, $page, $totalCount, $limit)
     {
         return array(
             'self' => array(
-                'href' => $this->router->generate($route)
+                'href' => $this->router->generate(
+                    $routeName,
+                    array(
+                        '_format' => $format,
+                    ),
+                    true
+                )
             ),
             'next' => $this->generateNextLink(
-                $route,
+                $routeName,
+                $format,
                 $page,
                 $totalCount,
                 $limit
             ),
             'previous' => $this->generatePreviousLink(
-                $route,
+                $routeName,
+                $format,
                 $page
             )
         );
     }
     
-    public function generateNextLink($route, $currentPage, $totalCount, $limit)
+    public function generateNextLink($routeName, $format, $currentPage, $totalCount, $limit)
     {
         if ($currentPage + 1 > ceil($totalCount / $limit)) {
             return '';
         }
 
-        return $this
-            ->router
-            ->generate($route, array('page' => $currentPage+1))
-        ;
+        return $this->router->generate(
+            $routeName,
+            array(
+                '_format' => $format,
+                'page'=> $currentPage+1,
+            ),
+            true
+        );
     }
 
-    public function generatePreviousLink($route, $currentPage) {
+    public function generatePreviousLink($routeName, $format, $currentPage) {
         if ($currentPage - 1 < 1) {
             return '';
         }
 
-        return $this
-            ->router
-            ->generate($route, array('page' => $currentPage-1))
-        ;
+        return $this->router->generate(
+            $routeName,
+            array(
+                '_format' => $format,
+                'page'=> $currentPage-1,
+            ),
+            true
+        );
     }
     
     public function computePageCount($totalCount, $offset, $limit)

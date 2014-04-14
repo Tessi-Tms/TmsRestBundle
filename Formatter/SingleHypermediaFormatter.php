@@ -11,6 +11,7 @@
 namespace Tms\Bundle\RestBundle\Formatter;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Tms\Bundle\RestBundle\Formatter\AbstractFormatter;
 
 class SingleHypermediaFormatter extends AbstractFormatter
 {
@@ -21,9 +22,7 @@ class SingleHypermediaFormatter extends AbstractFormatter
 
     public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
     {
-        $this->router = $router;
-        $this->tmsRestCriteriaBuilder = $tmsRestCriteriaBuilder;
-        parent::__construct($serializer);
+        parent::__construct($router, $tmsRestCriteriaBuilder, $serializer);
     }
 
     public function setTmsEntityManager($tmsEntityManager)
@@ -33,7 +32,7 @@ class SingleHypermediaFormatter extends AbstractFormatter
         return $this;
     }
 
-    public function format($parameters, $route)
+    public function format($parameters, $route, $format)
     {
         $entity = $this->tmsEntityManager->findOneById($parameters['singleId']);
         if (!$entity) {
@@ -43,7 +42,7 @@ class SingleHypermediaFormatter extends AbstractFormatter
         $data = array();
         $data['metadata'] = $this->formatMetadata();
         $data['data']     = $this->formatData($entity);
-        $data['links']    = $this->formatLinks($route, $entity->getId());
+        $data['links']    = $this->formatLinks($route, $format, $entity->getId());
 
         if(isset($parameters['embedded'])) {
             $this->guessEntityAssociations();
@@ -54,7 +53,8 @@ class SingleHypermediaFormatter extends AbstractFormatter
                         $entity,
                         $embeddedName,
                         $embeddedRoutes['singleRoute'],
-                        $embeddedRoutes['collectionRoute']
+                        $embeddedRoutes['collectionRoute'],
+                        $format
                     );
                 }
             }
@@ -72,7 +72,7 @@ class SingleHypermediaFormatter extends AbstractFormatter
             ->associationMappings;
     }
 
-    public function addEmbedded($singleEntity, $embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
+    public function addEmbedded($singleEntity, $embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute, $format)
     {
         $retrieveEmbeddedMethod = $this->guessRetrieveEmbeddedMethod($embeddedName);
         $embeddedEntities = $singleEntity->$retrieveEmbeddedMethod();
@@ -81,26 +81,28 @@ class SingleHypermediaFormatter extends AbstractFormatter
             'metadata' => array(
                 'type' => get_class($embeddedEntities[0])
             ),
-            'data'  => $this->formatEmbedded($embeddedSingleRoute, $embeddedEntities),
+            'data'  => $this->formatEmbeddedData($embeddedSingleRoute, $embeddedEntities, $format),
             'links' => array(
                 'self' => array(
-                    'href' => $this
-                        ->router
-                        ->generate(
-                            $embeddedCollectionRoute,
-                            array('id' => $singleEntity->getId())
-                        )
+                    'href' => $this->router->generate(
+                        $embeddedCollectionRoute,
+                        array(
+                            '_format' => $format,
+                            'id' => $singleEntity->getId(),
+                        ),
+                        true
+                    )
                 )
             )
         );
     }
-    
+
     public function guessRetrieveEmbeddedMethod($embeddedName)
     {
         return sprintf("get%s", ucfirst($embeddedName));
     }
 
-    public function formatEmbedded($embeddedSingleRoute, $embeddedEntities)
+    public function formatEmbeddedData($embeddedSingleRoute, $embeddedEntities, $format)
     {
         $formattedEntities = array();
         
@@ -111,16 +113,18 @@ class SingleHypermediaFormatter extends AbstractFormatter
                     ->serialize(
                         $entity, 
                         'json', 
-                        \JMS\Serializer\SerializationContext::create()->setGroups(array('list'))
+                        \JMS\Serializer\SerializationContext::create()->setGroups(AbstractFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION)
                     ),
                 'links' => array(
                     'self' => array(
-                        'href' => $this
-                            ->router
-                            ->generate(
-                                $embeddedSingleRoute,
-                                array('id' => $entity->getId())
-                            )
+                        'href' => $this->router->generate(
+                            $embeddedSingleRoute,
+                            array(
+                                '_format' => $format,
+                                'id' => $entity->getId(),
+                            ),
+                            true
+                        )
                     )
                 ),
                 'metadata' => array()
@@ -142,16 +146,17 @@ class SingleHypermediaFormatter extends AbstractFormatter
         return $entity;
     }
 
-    public function formatLinks($route, $id)
+    public function formatLinks($routeName, $format, $id)
     {
-        return array(
-            'self' => array(
-                'href' => $this->router
-                    ->generate(
-                        $route,
-                        array('id' => $id)
-                    )
-            ),
+        return array('self' => 
+            $this->router->generate(
+                $routeName,
+                array(
+                    '_format' => $format,
+                    'id' => $id,
+                ),
+                true
+            )
         );
     }
 }

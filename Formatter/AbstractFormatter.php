@@ -16,9 +16,20 @@ abstract class AbstractFormatter implements FormatterInterface
     const SERIALIZER_CONTEXT_GROUP_COLLECTION = 'list';
 
     protected $serializer;
+    protected $router;
+    protected $tmsRestCriteriaBuilder;
 
-    public function __construct($serializer)
+    public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
     {
+        $this->router = $router;
+        $this->tmsRestCriteriaBuilder = $tmsRestCriteriaBuilder;
         $this->serializer = $serializer;
+    }
+
+    public function getEntityNamespace($entityClass)
+    {
+        $r = new \ReflectionClass($entityClass);
+        
+        return $r->getNamespaceName();
     }
 }
