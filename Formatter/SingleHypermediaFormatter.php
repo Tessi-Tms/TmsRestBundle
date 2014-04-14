@@ -49,12 +49,14 @@ class SingleHypermediaFormatter extends AbstractFormatter
             $this->guessEntityAssociations();
 
             foreach($parameters['embedded'] as $embeddedName => $embeddedRoutes) {
-                $data['embedded'][$embeddedName] = $this->addEmbedded(
-                    $entity,
-                    $embeddedName,
-                    $embeddedRoutes['singleRoute'],
-                    $embeddedRoutes['collectionRoute']
-                );
+                if(array_key_exists($embeddedName, $this->associations)) {
+                    $data['embedded'][$embeddedName] = $this->addEmbedded(
+                        $entity,
+                        $embeddedName,
+                        $embeddedRoutes['singleRoute'],
+                        $embeddedRoutes['collectionRoute']
+                    );
+                }
             }
         }
         
@@ -72,27 +74,25 @@ class SingleHypermediaFormatter extends AbstractFormatter
 
     public function addEmbedded($singleEntity, $embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
     {
-        if(array_key_exists($embeddedName, $this->associations)) {
-            $retrieveEmbeddedMethod = $this->guessRetrieveEmbeddedMethod($embeddedName);
-            $embeddedEntities = $singleEntity->$retrieveEmbeddedMethod();
+        $retrieveEmbeddedMethod = $this->guessRetrieveEmbeddedMethod($embeddedName);
+        $embeddedEntities = $singleEntity->$retrieveEmbeddedMethod();
 
-            return array(
-                'metadata' => array(
-                    'type' => get_class($embeddedEntities[0])
-                ),
-                'data'  => $this->formatEmbedded($embeddedSingleRoute, $embeddedEntities),
-                'links' => array(
-                    'self' => array(
-                        'href' => $this
-                            ->router
-                            ->generate(
-                                $embeddedCollectionRoute,
-                                array('id' => $singleEntity->getId())
-                            )
-                    )
+        return array(
+            'metadata' => array(
+                'type' => get_class($embeddedEntities[0])
+            ),
+            'data'  => $this->formatEmbedded($embeddedSingleRoute, $embeddedEntities),
+            'links' => array(
+                'self' => array(
+                    'href' => $this
+                        ->router
+                        ->generate(
+                            $embeddedCollectionRoute,
+                            array('id' => $singleEntity->getId())
+                        )
                 )
-            );
-        }
+            )
+        );
     }
     
     public function guessRetrieveEmbeddedMethod($embeddedName)
