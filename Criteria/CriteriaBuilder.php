@@ -31,42 +31,6 @@ class CriteriaBuilder
         $this->configuration = $configuration;
     }
 
-    /**
-     * Clean the criteria according to a list of given parameters and eventually a route name
-     *
-     * @param array        $parameters
-     * @param string|null  $route
-     */
-    public function clean(array &$parameters, $currentRoute = null)
-    {
-        if (!count($parameters)) {
-            return $parameters;
-        }
-
-        $this->guessPaginationByRoute($currentRoute);
-
-        $parameters['limit']  = $this->defineLimitValue($parameters['limit']);
-        $parameters['sort']   = $this->defineSortValue($parameters['sort']);
-        $parameters['offset'] = $this->defineOffsetValue($parameters['offset']);
-        $parameters['page']   = $this->definePageValue($parameters['page']);
-
-        foreach ($parameters['criteria'] as $name => $value) {
-            if (null === $value) {
-                unset($parameters['criteria'][$name]);
-                continue;
-            }
-
-            if (is_array($value)) {
-                foreach ($value as $k => $v) {
-                    try {
-                        $parameters['criteria'][$name][$k] = unserialize($v);
-                    } catch(\Exception $e) {
-                        continue;
-                    }
-                }
-            }
-        }
-    }
 
     /**
      * Guess Pagination by Route
@@ -74,7 +38,7 @@ class CriteriaBuilder
      * @param string|null $route
      * @return array
      */
-    private function guessPaginationByRoute($route = null)
+    public function guessPaginationByRoute($route = null)
     {
         if (null === $route || count($this->configuration['routes']) == 0) {
             $this->configuration = $this->configuration['default'];
@@ -89,12 +53,44 @@ class CriteriaBuilder
     }
 
     /**
-     * Define the limit value according to the original value and the defined configuration of the pagination
+     * Define the criteria according to the original value and the defined configuration
+     *
+     * @param array $criteria
+     * @return array
+     */
+    public function defineCriteriaValue($criteria = null)
+    {
+        if(is_null($criteria)) {
+            return array();
+        }
+
+        foreach ($criteria as $name => $value) {
+            if (null === $value) {
+                unset($criteria[$name]);
+                continue;
+            }
+
+            if (is_array($value)) {
+                foreach ($value as $k => $v) {
+                    try {
+                        $criteria[$name][$k] = unserialize($v);
+                    } catch(\Exception $e) {
+                        continue;
+                    }
+                }
+            }
+        }
+        
+        return $criteria;
+    }
+
+    /**
+     * Define the limit according to the original value and the defined configuration
      *
      * @param mixed $originalValue
      * @return integer
      */
-    private function defineLimitValue($originalValue)
+    public function defineLimitValue($originalValue = null)
     {
         $defaultLimit = $this->configuration['pagination']['limit'];
         if (is_null($originalValue)) {
@@ -113,43 +109,36 @@ class CriteriaBuilder
     }
     
     /**
-     * Define the sort values (FIELD & ORDER) according to the original value and the defined configuration of the pagination
+     * Define the sort values according to the original value and the defined configuration
      *
      * @param mixed $originalValue
-     * @return string
+     * @return array
      */
-    private function defineSortValue($originalValue)
+    public function defineSortValue($originalValue = null)
     {
         $defaultSort = $this->configuration['pagination']['sort'];
         $allowed_orders = array(self::ORDER_ASC, self::ORDER_DESC);
 
-        if (is_null($originalValue['order']) && is_null($originalValue['field'])) {
+        if (is_null($originalValue)) {
             return $defaultSort;
         }
         
-        if(!isset($originalValue['order']) || !in_array(
-            strtolower($originalValue['order']),
-            $allowed_orders
-        )) {
-            
-            $originalValue['order'] = $defaultSort['order'];
-        }
-        
-        if(!isset($originalValue['field'])) {
-            
-            $originalValue['field'] = $defaultSort['field'];
+        foreach($originalValue as $field => $order) {
+            if(!in_array($order, $allowed_orders)) {
+                unset($originalValue[$field]);
+            }
         }
 
         return $originalValue;
     }
  
     /**
-     * Define the page value according to the original value and the defined configuration of the pagination
+     * Define the page according to the original value and the defined configuration
      *
      * @param mixed $originalValue
      * @return integer
      */
-    private function definePageValue($originalValue)
+    public function definePageValue($originalValue = null)
     {
         $defaultPage = $this->configuration['pagination']['page'];
         if(is_null($originalValue)) {
@@ -160,12 +149,12 @@ class CriteriaBuilder
     }
     
     /**
-     * Define the offset value according to the original value and the defined configuration of the pagination
+     * Define the offset according to the original value and the defined configuration
      *
      * @param mixed $originalValue
      * @return integer
      */
-    private function defineOffsetValue($originalValue)
+    public function defineOffsetValue($originalValue = null)
     {
         $defaultOffset = $this->configuration['pagination']['offset'];
         if (is_null($originalValue)) {

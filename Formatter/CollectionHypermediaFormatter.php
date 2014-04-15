@@ -10,37 +10,48 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-class CollectionHypermediaFormatter extends AbstractFormatter
+class CollectionHypermediaFormatter extends HypermediaFormatter
 {
-    public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
+    protected $criteria = null;
+    protected $limit = null;
+    protected $sort = null;
+    protected $page = null;
+    protected $offset = null;
+
+    /**
+     * Constructor
+     */
+    public function __construct($router, $tmsRestCriteriaBuilder, $serializer, $currentRouteName, $format)
     {
+        $this->currentRouteName = $currentRouteName;
+        $this->format = $format;
         parent::__construct($router, $tmsRestCriteriaBuilder, $serializer);
+        
+        // Initialize configuration by route
+        $this->tmsRestCriteriaBuilder->guessPaginationByRoute($currentRouteName);
     }
 
-    public function setTmsEntityManager($tmsEntityManager)
+    /**
+     * {@inheritdoc }
+     */
+    public function format()
     {
-        $this->tmsEntityManager = $tmsEntityManager;
-
-        return $this;
-    }
-    
-    public function format($parameters, $routeName, $format)
-    {
-        $this->tmsRestCriteriaBuilder->clean(
-            $parameters,
-            $routeName
-        );
+        // Set default values if some parameters are missing
+        $this->clean(array(
+            'criteria' => $this->criteria,
+            'limit'    => $this->limit,
+            'sort'     => $this->sort,
+            'page'     => $this->page,
+            'offset'   => $this->offset
+        ));
 
         $entities = $this
             ->tmsEntityManager
             ->findBy(
-                $parameters['criteria'],
-                array(
-                    $parameters['sort']['field'] =>
-                    $parameters['sort']['order']
-                ),
-                $parameters['limit'],
-                $parameters['offset']
+                $this->criteria,
+                $this->sort,
+                $this->limit,
+                $this->offset
             )
         ;
 
@@ -51,116 +62,227 @@ class CollectionHypermediaFormatter extends AbstractFormatter
         // #######################################
         $totalCount = $this
             ->tmsEntityManager
-            ->count($parameters['criteria'])
+            ->count($this->criteria)
         ;
 
         return array(
-            'metadata' => $this->formatMetadata(
-                $totalCount,
-                $parameters['limit'],
-                $parameters['offset'],
-                $parameters['page']
-            ),
-            'data'  => $this->formatData($entities),
-            'links' => $this->formatLinks(
-                $routeName,
-                $format,
-                $parameters['page'],
-                $totalCount,
-                $parameters['limit']
-            )
+            'metadata' => $this->formatMetadata($totalCount),
+            'data'     => $this->formatData($entities),
+            'links'    => $this->formatLinks($totalCount)
         );
     }
 
-    public function formatMetadata($totalCount, $limit, $offset, $page)
+    /**
+     * Format metadata into a given layout for hypermedia
+     *
+     * @param int|null $totalCount
+     * @return array
+     */
+    public function formatMetadata($totalCount)
     {
         return array(
-            'type'          => $this->tmsEntityManager->getEntityClass(),
-            'page'          => $page,
-            'pageCount'     => $this->computePageCount(
-                $totalCount,
-                $offset,
-                $limit
-            ),
+            'type'          => $this->getClassNamespace(),
+            'page'          => $this->page,
+            'pageCount'     => $this->computePageCount($totalCount),
             'totalCount'    => $totalCount,
-            'limit'         => $limit,
-            'offset'        => $offset
+            'limit'         => $this->limit,
+            'offset'        => $this->offset
         );
     }
-    
+
+    /**
+     * Format data into a given layout for hypermedia
+     *
+     * @param array $entities
+     * @return array
+     */
     public function formatData($entities)
     {
         return $entities;
     }
+
+    /**
+     * Define the criteria according to the original value and configuration
+     *
+     * @param array $criteria
+     * @return $this
+     */
+    public function setCriteria($criteria = null)
+    {
+        $this->criteria = $this
+            ->tmsRestCriteriaBuilder
+            ->defineCriteriaValue($criteria)
+        ;
+        
+        return $this;
+    }
     
-    public function formatLinks($routeName, $format, $page, $totalCount, $limit)
+    /**
+     * Define the limit according to the original value and configuration
+     *
+     * @param array $limit
+     * @return $this
+     */
+    public function setLimit($limit = null)
+    {
+        $this->limit = $this
+            ->tmsRestCriteriaBuilder
+            ->defineLimitValue($limit)
+        ;
+        
+        return $this;
+    }
+    
+    /**
+     * Define the sort according to the original value and configuration
+     *
+     * @param array $sort
+     * @return $this
+     */
+    public function setSort($sort = null)
+    {
+        $this->sort = $this
+            ->tmsRestCriteriaBuilder
+            ->defineSortValue($sort)
+        ;
+        
+        return $this;
+    }
+    
+    /**
+     * Define the page according to the original value and configuration
+     *
+     * @param array $page
+     * @return $this
+     */
+    public function setPage($page = null)
+    {
+        $this->page = $this
+            ->tmsRestCriteriaBuilder
+            ->definePageValue($page)
+        ;
+        
+        return $this;
+    }
+
+    /**
+     * Define the offset according to the original value and configuration
+     *
+     * @param array $offset
+     * @return $this
+     */
+    public function setOffset($offset = null)
+    {
+        $this->offset = $this
+            ->tmsRestCriteriaBuilder
+            ->defineOffsetValue($offset)
+        ;
+        
+        return $this;
+    }
+
+    /**
+     * Define all params with configuration if some are not given
+     *
+     * @param array $parameters
+     */
+    public function clean(array $params)
+    {
+        foreach($params as $name => $value) {
+            if(is_null($value)) {
+                $defineMethod = sprintf("define%sValue", ucfirst($name));
+                $this->$name = $this
+                    ->tmsRestCriteriaBuilder
+                    ->$defineMethod()
+                ;
+            }
+        }
+    }
+
+    /**
+     * Format links into a given layout for hypermedia
+     *
+     * @param int|null $totalCount
+     * @return array
+     */
+    public function formatLinks($totalCount)
     {
         return array(
             'self' => array(
                 'href' => $this->router->generate(
-                    $routeName,
+                    $this->currentRouteName,
                     array(
-                        '_format' => $format,
+                        '_format' => $this->format,
                     ),
                     true
                 )
             ),
-            'next' => $this->generateNextLink(
-                $routeName,
-                $format,
-                $page,
-                $totalCount,
-                $limit
-            ),
-            'previous' => $this->generatePreviousLink(
-                $routeName,
-                $format,
-                $page
-            )
+            'next' => $this->generateNextLink($totalCount),
+            'previous' => $this->generatePreviousLink()
         );
     }
-    
-    public function generateNextLink($routeName, $format, $currentPage, $totalCount, $limit)
+
+    /**
+     * Generate next link to navigate in hypermedia collection
+     *
+     * @param int|null $totalCount
+     * @return string
+     */
+    public function generateNextLink($totalCount)
     {
-        if ($currentPage + 1 > ceil($totalCount / $limit)) {
+        if ($this->page + 1 > ceil($totalCount / $this->limit)) {
             return '';
         }
 
         return $this->router->generate(
-            $routeName,
+            $this->currentRouteName,
             array(
-                '_format' => $format,
-                'page'=> $currentPage+1,
+                '_format' => $this->format,
+                'page'    => $this->page+1,
             ),
             true
         );
     }
 
-    public function generatePreviousLink($routeName, $format, $currentPage) {
-        if ($currentPage - 1 < 1) {
+    /**
+     * Generate previous link to navigate in hypermedia collection
+     *
+     * @param int|null $totalCount
+     * @return string
+     */
+    public function generatePreviousLink() {
+        if ($this->page - 1 < 1) {
             return '';
         }
 
         return $this->router->generate(
-            $routeName,
+            $this->currentRouteName,
             array(
-                '_format' => $format,
-                'page'=> $currentPage-1,
+                '_format' => $this->format,
+                'page'    => $this->page-1,
             ),
             true
         );
     }
-    
-    public function computePageCount($totalCount, $offset, $limit)
+
+    /**
+     * Compute the actual elements number of a page of a collection
+     *
+     * @param int|null $totalCount
+     * @return int
+     */
+    public function computePageCount($totalCount)
     {
-        if($offset > $totalCount) {
+        if($this->offset > $totalCount) {
             return 0;
         } else {
-            if($totalCount-$offset > $limit) {
-                return $limit;
+            if($totalCount-$this->offset > $this->limit) {
+                return $this->limit;
             } else {
-               return $totalCount-$offset; 
+               return $totalCount-$this->offset; 
             }
         }
+
+        return 0;
     }
 }

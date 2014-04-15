@@ -11,117 +11,211 @@
 namespace Tms\Bundle\RestBundle\Formatter;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Tms\Bundle\RestBundle\Formatter\AbstractFormatter;
 
-class SingleHypermediaFormatter extends AbstractFormatter
+class SingleHypermediaFormatter extends HypermediaFormatter
 {
-    protected $router;
-    protected $tmsRestCriteriaBuilder;
-    protected $tmsEntityManager;
-    protected $associations;
+    protected $entityId;
+    protected $entity;
+    protected $embedded;
 
-    public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
+    /**
+     * Constructor
+     */
+    public function __construct($router, $tmsRestCriteriaBuilder, $serializer, $currentRouteName, $format, $entityId)
     {
+        $this->currentRouteName = $currentRouteName;
+        $this->format = $format;
+        $this->entityId = $entityId;
         parent::__construct($router, $tmsRestCriteriaBuilder, $serializer);
+
+        // Initialize configuration by route
+        $this->tmsRestCriteriaBuilder->guessPaginationByRoute($currentRouteName);
     }
 
+    /**
+     * Dependency injection to set entity manager to the formatter
+     * Moreoever, retrieve the entity thanks to the given ID and throw
+     * an exception if not found
+     *
+     * @param EntityManager $tmsEntityManager
+     * @return $this
+     */
     public function setTmsEntityManager($tmsEntityManager)
     {
-        $this->tmsEntityManager = $tmsEntityManager;
-
-        return $this;
-    }
-
-    public function format($parameters, $route, $format)
-    {
-        $entity = $this->tmsEntityManager->findOneById($parameters['singleId']);
-        if (!$entity) {
+        $this->entity = $tmsEntityManager->findOneById($this->entityId);
+        if (!$this->entity) {
             throw new NotFoundHttpException("Entity not found.");
         }
 
-        $data = array();
-        $data['metadata'] = $this->formatMetadata();
-        $data['data']     = $this->formatData($entity);
-        $data['links']    = $this->formatLinks($route, $format, $entity->getId());
-
-        if(isset($parameters['embedded'])) {
-            $this->guessEntityAssociations();
-
-            foreach($parameters['embedded'] as $embeddedName => $embeddedRoutes) {
-                if(array_key_exists($embeddedName, $this->associations)) {
-                    $data['embedded'][$embeddedName] = $this->addEmbedded(
-                        $entity,
-                        $embeddedName,
-                        $embeddedRoutes['singleRoute'],
-                        $embeddedRoutes['collectionRoute'],
-                        $format
-                    );
-                }
-            }
-        }
-        
-        return $data;
-    }
-    
-    public function guessEntityAssociations()
-    {
-        $this->associations = $this
-            ->tmsEntityManager
-            ->getEntityManager()
-            ->getClassMetadata($this->tmsEntityManager->getEntityClass())
-            ->associationMappings;
+        return parent::setTmsEntityManager($tmsEntityManager);
     }
 
-    public function addEmbedded($singleEntity, $embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute, $format)
+    /**
+     * {@inheritdoc }
+     */
+    public function format()
     {
-        $retrieveEmbeddedMethod = $this->guessRetrieveEmbeddedMethod($embeddedName);
-        $embeddedEntities = $singleEntity->$retrieveEmbeddedMethod();
-
         return array(
-            'metadata' => array(
-                'type' => get_class($embeddedEntities[0])
-            ),
-            'data'  => $this->formatEmbeddedData($embeddedSingleRoute, $embeddedEntities, $format),
-            'links' => array(
-                'self' => array(
-                    'href' => $this->router->generate(
-                        $embeddedCollectionRoute,
-                        array(
-                            '_format' => $format,
-                            'id' => $singleEntity->getId(),
-                        ),
-                        true
-                    )
-                )
+            'metadata' => $this->formatMetadata(),
+            'data'     => $this->formatData(),
+            'links'    => $this->formatLinks(),
+            'embedded' => $this->formatEmbedded()
+        );
+    }
+
+    /**
+     * Format metadata into a given layout for hypermedia
+     *
+     * @return array
+     */
+    public function formatMetadata()
+    {
+        return array(
+            'type' => $this->getClassNamespace(),
+        );
+    }
+
+    /**
+     * Format data into a given layout for hypermedia
+     *
+     * @return array
+     */
+    public function formatData()
+    {
+        return $this->entity;
+    }
+
+    /**
+     * Format links into a given layout for hypermedia
+     *
+     * @return array
+     */
+    public function formatLinks()
+    {
+        return array('self' => 
+            $this->router->generate(
+                $this->currentRouteName,
+                array(
+                    '_format' => $this->format,
+                    'id'      => $this->entity->getId(),
+                ),
+                true
             )
         );
     }
 
-    public function guessRetrieveEmbeddedMethod($embeddedName)
+    /**
+     * Format embedded data of 1st depth into a given layout for hypermedia
+     * array(
+     *      'data'     => X,
+     *      'metadata' => X
+     *      'links'    => X,
+     *      'embedded' => $this->formatEmbedded()
+     * )
+     *
+     * @return array
+     */
+    public function formatEmbedded()
     {
-        return sprintf("get%s", ucfirst($embeddedName));
+        return $this->embedded;
     }
 
-    public function formatEmbeddedData($embeddedSingleRoute, $embeddedEntities, $format)
+    /**
+     * Add an embedded element to a single hypermedia entity
+     * You can chain this method easily
+     *
+     * @param string $embeddedName
+     * @param string $embeddedSingleRoute
+     * @param string $embeddedCollectionRoute
+     * @return $this
+     */
+    public function addEmbedded($embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
+    {
+        if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
+            $this->embedded[$embeddedName] = array(
+                'metadata' => array(
+                    'type' => $this->getEmbeddedType($embeddedName)
+                ),
+                'data'  => $this->formatEmbeddedData(
+                    $embeddedSingleRoute,
+                    $this->getEmbeddedData($embeddedName)
+                ),
+                'links' => array(
+                    'self' => array(
+                        'href' => $this->router->generate(
+                            $embeddedCollectionRoute,
+                            array(
+                                '_format' => $this->format,
+                                'id'      => $this->entity->getId(),
+                            ),
+                            true
+                        )
+                    )
+                )
+            );
+        }
+        
+        return $this;
+    }
+
+    /**
+     * Check if a requested embedded element is actually
+     * mapped by the single entity
+     *
+     * @param string $embeddedName
+     * @return boolean
+     */
+    public function isEmbeddedMappedBySingleEntity($embeddedName)
+    {
+        return array_key_exists(
+            $embeddedName,
+            $this->getClassMetadata()->associationMappings
+        );
+    }
+
+    /**
+     * Retrieve embedded entities for a given embedded name
+     * 
+     * @param string $embeddedName
+     * @return Collection
+     */
+    public function getEmbeddedData($embeddedName)
+    {
+        $retrieveEmbeddedMethod = sprintf("get%s", ucfirst($embeddedName));
+        return $this->entity->$retrieveEmbeddedMethod();
+    }
+
+    /**
+     * Format embedded data of 2nd depth into a given layout for hypermedia
+     * array(
+     *      'data'     => X,
+     *      'metadata' => X
+     *      'links'    => X,
+     *      'embedded' => array(
+     *          'data'     => $this->formatEmbeddedData(X, X),
+     *          'metadata' => X
+     *          'links'    => X,
+     *      )
+     * )
+     * 
+     * @param string $embeddedSingleRoute
+     * @param string $embeddedEntities
+     * @return array
+     */
+    public function formatEmbeddedData($embeddedSingleRoute, $embeddedEntities)
     {
         $formattedEntities = array();
         
         foreach($embeddedEntities as $entity) {
             array_push($formattedEntities, array(
-                'data' => $this
-                    ->serializer
-                    ->serialize(
-                        $entity, 
-                        'json', 
-                        \JMS\Serializer\SerializationContext::create()->setGroups(AbstractFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION)
-                    ),
+                'data' => $entity,
                 'links' => array(
                     'self' => array(
                         'href' => $this->router->generate(
                             $embeddedSingleRoute,
                             array(
-                                '_format' => $format,
-                                'id' => $entity->getId(),
+                                '_format' => $this->format,
+                                'id'      => $entity->getId(),
                             ),
                             true
                         )
@@ -134,29 +228,15 @@ class SingleHypermediaFormatter extends AbstractFormatter
         return $formattedEntities;
     }
 
-    public function formatMetadata()
+    /**
+     * Give embedded entity namespace
+     *
+     * @return string
+     */
+    public function getEmbeddedType($embeddedName)
     {
-        return array(
-            'type' => $this->tmsEntityManager->getEntityClass(),
-        );
-    }
-
-    public function formatData($entity)
-    {
-        return $entity;
-    }
-
-    public function formatLinks($routeName, $format, $id)
-    {
-        return array('self' => 
-            $this->router->generate(
-                $routeName,
-                array(
-                    '_format' => $format,
-                    'id' => $id,
-                ),
-                true
-            )
-        );
+        return $this
+            ->getClassMetadata()
+            ->associationMappings[$embeddedName]['targetEntity'];
     }
 }
