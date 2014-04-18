@@ -94,7 +94,7 @@ class HypermediaFormatter extends AbstractFormatter
 
     /**
      * Give a class metadata collection thanks to the
-     * object manager and the object class name
+     * object manager and the object class namespace
      *
      * @return ClassMetadataCollection
      */

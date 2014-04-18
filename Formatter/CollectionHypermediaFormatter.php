@@ -10,8 +10,6 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-use Doctrine\Common\Persistence\ObjectManager;
-
 class CollectionHypermediaFormatter extends HypermediaFormatter
 {
     protected $criteria = null;
@@ -70,57 +68,6 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
             'data'     => $this->formatData(),
             'links'    => $this->formatLinks()
         );
-    }
-
-    /**
-     * Count objects query builder
-     *
-     * @param array $criteria
-     * @return \Doctrine\ORM\QueryBuilder
-     */
-    public function countObjectsQueryBuilder($criteria = null)
-    {
-        $qb = $this
-            ->objectManager
-            ->createQueryBuilder()
-            ->select('COUNT(object.id)')
-            ->from($this->objectNamespace, 'object');
-
-        if(is_null($criteria)) {
-            return $qb;
-        }
-
-        foreach($criteria as $name => $value) {
-            $qb->andWhere(sprintf('object.%s = %s', $name, $value));
-        }
-
-        return $qb;
-    }
-
-    /**
-     * Count objects query
-     *
-     * @param array $criteria
-     * @return \Doctrine\ORM\Query
-     */
-    public function countObjectsQuery($criteria = null)
-    {
-        return $this->countObjectsQueryBuilder($criteria)->getQuery();
-    }
-
-    /**
-     * Count objects
-     *
-     * @param array $criteria
-     * @return integer
-     */
-    public function countObjects($criteria = null)
-    {
-        try {
-            return $this->countObjectsQuery($criteria)->getSingleScalarResult();
-        } catch(\Exception $e) {
-            return 0;
-        }
     }
 
     /**
@@ -331,5 +278,56 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
         }
 
         return 0;
+    }
+
+    /**
+     * Count objects query builder
+     *
+     * @param array $criteria
+     * @return \Doctrine\ORM\QueryBuilder
+     */
+    public function countObjectsQueryBuilder($criteria = null)
+    {
+        $qb = $this
+            ->objectManager
+            ->createQueryBuilder()
+            ->select('COUNT(object.id)')
+            ->from($this->objectNamespace, 'object');
+
+        if(is_null($criteria)) {
+            return $qb;
+        }
+
+        foreach($criteria as $name => $value) {
+            $qb->andWhere(sprintf('object.%s = %s', $name, $value));
+        }
+
+        return $qb;
+    }
+
+    /**
+     * Count objects query
+     *
+     * @param array $criteria
+     * @return \Doctrine\ORM\Query
+     */
+    public function countObjectsQuery($criteria = null)
+    {
+        return $this->countObjectsQueryBuilder($criteria)->getQuery();
+    }
+
+    /**
+     * Count objects
+     *
+     * @param array $criteria
+     * @return integer
+     */
+    public function countObjects($criteria = null)
+    {
+        try {
+            return $this->countObjectsQuery($criteria)->getSingleScalarResult();
+        } catch(\Exception $e) {
+            return 0;
+        }
     }
 }

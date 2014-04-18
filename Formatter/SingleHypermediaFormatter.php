@@ -27,6 +27,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
         $this->currentRouteName = $currentRouteName;
         $this->format = $format;
         $this->objectId = $objectId;
+
         parent::__construct($router, $criteriaBuilder, $serializer);
 
         // Initialize configuration by route
@@ -38,7 +39,6 @@ class SingleHypermediaFormatter extends HypermediaFormatter
      *
      * @param ObjectManager $objectManager
      * @param string $objectNamespace
-     * @return array
      */
     public function setObjectManager(ObjectManager $objectManager, $objectNamespace)
     {
@@ -46,7 +46,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
             ->getRepository($objectNamespace)
             ->findOneById($this->objectId);
         if (!$this->object) {
-            throw new NotFoundHttpException("Object not found.");
+            throw new NotFoundHttpException();
         }
 
         return parent::setObjectManager($objectManager, $objectNamespace);

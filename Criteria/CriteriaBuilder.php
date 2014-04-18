@@ -120,7 +120,9 @@ class CriteriaBuilder
         $allowed_orders = array(self::ORDER_ASC, self::ORDER_DESC);
 
         if (is_null($originalValue)) {
-            return $defaultSort;
+            return array(
+                $defaultSort['field'] => $defaultSort['order']
+            );
         }
         
         foreach($originalValue as $field => $order) {
