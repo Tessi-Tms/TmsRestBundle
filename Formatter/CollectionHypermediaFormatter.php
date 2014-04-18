@@ -10,6 +10,8 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
+use Doctrine\Common\Persistence\ObjectManager;
+
 class CollectionHypermediaFormatter extends HypermediaFormatter
 {
     protected $criteria = null;
@@ -17,18 +19,21 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     protected $sort = null;
     protected $page = null;
     protected $offset = null;
+    
+    protected $totalCount;
+    protected $objects;
 
     /**
      * Constructor
      */
-    public function __construct($router, $tmsRestCriteriaBuilder, $serializer, $currentRouteName, $format)
+    public function __construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format)
     {
         $this->currentRouteName = $currentRouteName;
         $this->format = $format;
-        parent::__construct($router, $tmsRestCriteriaBuilder, $serializer);
+        parent::__construct($router, $criteriaBuilder, $serializer);
         
         // Initialize configuration by route
-        $this->tmsRestCriteriaBuilder->guessPaginationByRoute($currentRouteName);
+        $this->criteriaBuilder->guessConfigurationByRoute($currentRouteName);
     }
 
     /**
@@ -45,8 +50,10 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
             'offset'   => $this->offset
         ));
 
-        $entities = $this
-            ->tmsEntityManager
+        // Retrieve objects according to a given criteria
+        $this->objects = $this
+            ->objectManager
+            ->getRepository($this->objectNamespace)
             ->findBy(
                 $this->criteria,
                 $this->sort,
@@ -55,21 +62,65 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
             )
         ;
 
-        // #######################################
-        // 
-        //    TODO : OPTIMIZE COUNT FUNCTION
-        // 
-        // #######################################
-        $totalCount = $this
-            ->tmsEntityManager
-            ->count($this->criteria)
-        ;
-
+        // Count objects according to a given criteria
+        $this->totalCount = $this->countObjects($this->criteria);
+ 
         return array(
-            'metadata' => $this->formatMetadata($totalCount),
-            'data'     => $this->formatData($entities),
-            'links'    => $this->formatLinks($totalCount)
+            'metadata' => $this->formatMetadata(),
+            'data'     => $this->formatData(),
+            'links'    => $this->formatLinks()
         );
+    }
+
+    /**
+     * Count objects query builder
+     *
+     * @param array $criteria
+     * @return \Doctrine\ORM\QueryBuilder
+     */
+    public function countObjectsQueryBuilder($criteria = null)
+    {
+        $qb = $this
+            ->objectManager
+            ->createQueryBuilder()
+            ->select('COUNT(object.id)')
+            ->from($this->objectNamespace, 'object');
+
+        if(is_null($criteria)) {
+            return $qb;
+        }
+
+        foreach($criteria as $name => $value) {
+            $qb->andWhere(sprintf('object.%s = %s', $name, $value));
+        }
+
+        return $qb;
+    }
+
+    /**
+     * Count objects query
+     *
+     * @param array $criteria
+     * @return \Doctrine\ORM\Query
+     */
+    public function countObjectsQuery($criteria = null)
+    {
+        return $this->countObjectsQueryBuilder($criteria)->getQuery();
+    }
+
+    /**
+     * Count objects
+     *
+     * @param array $criteria
+     * @return integer
+     */
+    public function countObjects($criteria = null)
+    {
+        try {
+            return $this->countObjectsQuery($criteria)->getSingleScalarResult();
+        } catch(\Exception $e) {
+            return 0;
+        }
     }
 
     /**
@@ -78,13 +129,13 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
      * @param int|null $totalCount
      * @return array
      */
-    public function formatMetadata($totalCount)
+    public function formatMetadata()
     {
         return array(
             'type'          => $this->getClassNamespace(),
             'page'          => $this->page,
-            'pageCount'     => $this->computePageCount($totalCount),
-            'totalCount'    => $totalCount,
+            'pageCount'     => $this->computePageCount(),
+            'totalCount'    => $this->totalCount,
             'limit'         => $this->limit,
             'offset'        => $this->offset
         );
@@ -93,12 +144,12 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     /**
      * Format data into a given layout for hypermedia
      *
-     * @param array $entities
+     * @param array $objects
      * @return array
      */
-    public function formatData($entities)
+    public function formatData()
     {
-        return $entities;
+        return $this->objects;
     }
 
     /**
@@ -110,7 +161,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     public function setCriteria($criteria = null)
     {
         $this->criteria = $this
-            ->tmsRestCriteriaBuilder
+            ->criteriaBuilder
             ->defineCriteriaValue($criteria)
         ;
         
@@ -126,7 +177,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     public function setLimit($limit = null)
     {
         $this->limit = $this
-            ->tmsRestCriteriaBuilder
+            ->criteriaBuilder
             ->defineLimitValue($limit)
         ;
         
@@ -142,7 +193,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     public function setSort($sort = null)
     {
         $this->sort = $this
-            ->tmsRestCriteriaBuilder
+            ->criteriaBuilder
             ->defineSortValue($sort)
         ;
         
@@ -158,7 +209,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     public function setPage($page = null)
     {
         $this->page = $this
-            ->tmsRestCriteriaBuilder
+            ->criteriaBuilder
             ->definePageValue($page)
         ;
         
@@ -174,7 +225,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     public function setOffset($offset = null)
     {
         $this->offset = $this
-            ->tmsRestCriteriaBuilder
+            ->criteriaBuilder
             ->defineOffsetValue($offset)
         ;
         
@@ -192,7 +243,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
             if(is_null($value)) {
                 $defineMethod = sprintf("define%sValue", ucfirst($name));
                 $this->$name = $this
-                    ->tmsRestCriteriaBuilder
+                    ->criteriaBuilder
                     ->$defineMethod()
                 ;
             }
@@ -202,10 +253,9 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     /**
      * Format links into a given layout for hypermedia
      *
-     * @param int|null $totalCount
      * @return array
      */
-    public function formatLinks($totalCount)
+    public function formatLinks()
     {
         return array(
             'self' => array(
@@ -217,7 +267,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
                     true
                 )
             ),
-            'next' => $this->generateNextLink($totalCount),
+            'next' => $this->generateNextLink(),
             'previous' => $this->generatePreviousLink()
         );
     }
@@ -225,12 +275,11 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     /**
      * Generate next link to navigate in hypermedia collection
      *
-     * @param int|null $totalCount
      * @return string
      */
-    public function generateNextLink($totalCount)
+    public function generateNextLink()
     {
-        if ($this->page + 1 > ceil($totalCount / $this->limit)) {
+        if ($this->page + 1 > ceil($this->totalCount / $this->limit)) {
             return '';
         }
 
@@ -247,7 +296,6 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     /**
      * Generate previous link to navigate in hypermedia collection
      *
-     * @param int|null $totalCount
      * @return string
      */
     public function generatePreviousLink() {
@@ -266,20 +314,19 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     }
 
     /**
-     * Compute the actual elements number of a page of a collection
+     * Compute the actual elements number of a page in a collection
      *
-     * @param int|null $totalCount
      * @return int
      */
-    public function computePageCount($totalCount)
+    public function computePageCount()
     {
-        if($this->offset > $totalCount) {
+        if($this->offset > $this->totalCount) {
             return 0;
         } else {
-            if($totalCount-$this->offset > $this->limit) {
+            if($this->totalCount-$this->offset > $this->limit) {
                 return $this->limit;
             } else {
-               return $totalCount-$this->offset; 
+               return $this->totalCount-$this->offset; 
             }
         }
 

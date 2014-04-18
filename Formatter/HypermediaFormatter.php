@@ -10,6 +10,8 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
+use Doctrine\Common\Persistence\ObjectManager;
+
 class HypermediaFormatter extends AbstractFormatter
 {
     const SERIALIZER_CONTEXT_GROUP_SINGLE = 'details';
@@ -22,29 +24,32 @@ class HypermediaFormatter extends AbstractFormatter
     // Services
     protected $serializer;
     protected $router;
-    protected $tmsRestCriteriaBuilder;
-    protected $tmsEntityManager;
+    protected $criteriaBuilder;
+    protected $objectManager;
+    protected $objectNamespace;
 
     /**
      * Constructor
      * 
      */
-    public function __construct($router, $tmsRestCriteriaBuilder, $serializer)
+    public function __construct($router, $criteriaBuilder, $serializer)
     {
         $this->router = $router;
-        $this->tmsRestCriteriaBuilder = $tmsRestCriteriaBuilder;
+        $this->criteriaBuilder = $criteriaBuilder;
         $this->serializer = $serializer;
     }
 
     /**
-     * Dependency injection to set entity manager to the formatter
+     * Dependency injection to set object manager to the formatter
      *
-     * @param EntityManager $tmsEntityManager
-     * @return $this
+     * @param ObjectManager $objectManager
+     * @param string $objectNamespace
+     * @return array
      */
-    public function setTmsEntityManager($tmsEntityManager)
+    public function setObjectManager(ObjectManager $objectManager, $objectNamespace)
     {
-        $this->tmsEntityManager = $tmsEntityManager;
+        $this->objectManager = $objectManager;
+        $this->objectNamespace = $objectNamespace;
 
         return $this;
     }
@@ -60,7 +65,7 @@ class HypermediaFormatter extends AbstractFormatter
     {
         return new CollectionHypermediaFormatter(
             $this->router,
-            $this->tmsRestCriteriaBuilder,
+            $this->criteriaBuilder,
             $this->serializer,
             $currentRouteName,
             $format
@@ -72,33 +77,32 @@ class HypermediaFormatter extends AbstractFormatter
      *
      * @param string $currentRouteName
      * @param string $format
-     * @param string $entityId
+     * @param string $objectId
      * @return SingleHypermediaFormatter
      */
-    public function buildSingleFormatter($currentRouteName, $format, $entityId)
+    public function buildSingleFormatter($currentRouteName, $format, $objectId)
     {
         return new SingleHypermediaFormatter(
             $this->router,
-            $this->tmsRestCriteriaBuilder,
+            $this->criteriaBuilder,
             $this->serializer,
             $currentRouteName,
             $format,
-            $entityId
+            $objectId
         );
     }
 
     /**
      * Give a class metadata collection thanks to the
-     * entity manager and the entity class name
+     * object manager and the object class name
      *
      * @return ClassMetadataCollection
      */
     public function getClassMetadata()
     {
         return $this
-            ->tmsEntityManager
-            ->getEntityManager()
-            ->getClassMetadata($this->tmsEntityManager->getEntityClass());
+            ->objectManager
+            ->getClassMetadata($this->objectNamespace);
     }
 
     /**

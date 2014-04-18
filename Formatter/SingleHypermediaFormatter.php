@@ -11,43 +11,45 @@
 namespace Tms\Bundle\RestBundle\Formatter;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Doctrine\Common\Persistence\ObjectManager;
 
 class SingleHypermediaFormatter extends HypermediaFormatter
 {
-    protected $entityId;
-    protected $entity;
-    protected $embedded;
+    protected $objectId = null;
+    protected $object = null;
+    protected $embedded = null;
 
     /**
      * Constructor
      */
-    public function __construct($router, $tmsRestCriteriaBuilder, $serializer, $currentRouteName, $format, $entityId)
+    public function __construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format, $objectId)
     {
         $this->currentRouteName = $currentRouteName;
         $this->format = $format;
-        $this->entityId = $entityId;
-        parent::__construct($router, $tmsRestCriteriaBuilder, $serializer);
+        $this->objectId = $objectId;
+        parent::__construct($router, $criteriaBuilder, $serializer);
 
         // Initialize configuration by route
-        $this->tmsRestCriteriaBuilder->guessPaginationByRoute($currentRouteName);
+        $this->criteriaBuilder->guessConfigurationByRoute($currentRouteName);
     }
 
     /**
-     * Dependency injection to set entity manager to the formatter
-     * Moreoever, retrieve the entity thanks to the given ID and throw
-     * an exception if not found
+     * Dependency injection to set object manager to the formatter
      *
-     * @param EntityManager $tmsEntityManager
-     * @return $this
+     * @param ObjectManager $objectManager
+     * @param string $objectNamespace
+     * @return array
      */
-    public function setTmsEntityManager($tmsEntityManager)
+    public function setObjectManager(ObjectManager $objectManager, $objectNamespace)
     {
-        $this->entity = $tmsEntityManager->findOneById($this->entityId);
-        if (!$this->entity) {
-            throw new NotFoundHttpException("Entity not found.");
+        $this->object = $objectManager
+            ->getRepository($objectNamespace)
+            ->findOneById($this->objectId);
+        if (!$this->object) {
+            throw new NotFoundHttpException("Object not found.");
         }
 
-        return parent::setTmsEntityManager($tmsEntityManager);
+        return parent::setObjectManager($objectManager, $objectNamespace);
     }
 
     /**
@@ -82,7 +84,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
      */
     public function formatData()
     {
-        return $this->entity;
+        return $this->object;
     }
 
     /**
@@ -97,7 +99,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
                 $this->currentRouteName,
                 array(
                     '_format' => $this->format,
-                    'id'      => $this->entity->getId(),
+                    'id'      => $this->object->getId(),
                 ),
                 true
             )
@@ -121,7 +123,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
     }
 
     /**
-     * Add an embedded element to a single hypermedia entity
+     * Add an embedded element to a single hypermedia object
      * You can chain this method easily
      *
      * @param string $embeddedName
@@ -134,7 +136,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
         if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
             $this->embedded[$embeddedName] = array(
                 'metadata' => array(
-                    'type' => $this->getEmbeddedType($embeddedName)
+                    'type' => $this->getEmbeddedNamespace($embeddedName)
                 ),
                 'data'  => $this->formatEmbeddedData(
                     $embeddedSingleRoute,
@@ -146,7 +148,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
                             $embeddedCollectionRoute,
                             array(
                                 '_format' => $this->format,
-                                'id'      => $this->entity->getId(),
+                                'id'      => $this->object->getId(),
                             ),
                             true
                         )
@@ -160,7 +162,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
 
     /**
      * Check if a requested embedded element is actually
-     * mapped by the single entity
+     * mapped by the single object
      *
      * @param string $embeddedName
      * @return boolean
@@ -174,7 +176,9 @@ class SingleHypermediaFormatter extends HypermediaFormatter
     }
 
     /**
-     * Retrieve embedded entities for a given embedded name
+     * Guess retrieve embedded data method
+     * Retrieve embedded objects for a given embedded name
+     * Example : $offer->getProducts()
      * 
      * @param string $embeddedName
      * @return Collection
@@ -182,7 +186,7 @@ class SingleHypermediaFormatter extends HypermediaFormatter
     public function getEmbeddedData($embeddedName)
     {
         $retrieveEmbeddedMethod = sprintf("get%s", ucfirst($embeddedName));
-        return $this->entity->$retrieveEmbeddedMethod();
+        return $this->object->$retrieveEmbeddedMethod();
     }
 
     /**
@@ -199,23 +203,23 @@ class SingleHypermediaFormatter extends HypermediaFormatter
      * )
      * 
      * @param string $embeddedSingleRoute
-     * @param string $embeddedEntities
+     * @param string $embeddedObjects
      * @return array
      */
-    public function formatEmbeddedData($embeddedSingleRoute, $embeddedEntities)
+    public function formatEmbeddedData($embeddedSingleRoute, $embeddedObjects)
     {
-        $formattedEntities = array();
+        $formattedObjects = array();
         
-        foreach($embeddedEntities as $entity) {
-            array_push($formattedEntities, array(
-                'data' => $entity,
+        foreach($embeddedObjects as $object) {
+            array_push($formattedObjects, array(
+                'data' => $object,
                 'links' => array(
                     'self' => array(
                         'href' => $this->router->generate(
                             $embeddedSingleRoute,
                             array(
                                 '_format' => $this->format,
-                                'id'      => $entity->getId(),
+                                'id'      => $object->getId(),
                             ),
                             true
                         )
@@ -225,15 +229,15 @@ class SingleHypermediaFormatter extends HypermediaFormatter
             ));
         }
 
-        return $formattedEntities;
+        return $formattedObjects;
     }
 
     /**
-     * Give embedded entity namespace
+     * Give embedded object namespace
      *
      * @return string
      */
-    public function getEmbeddedType($embeddedName)
+    public function getEmbeddedNamespace($embeddedName)
     {
         return $this
             ->getClassMetadata()

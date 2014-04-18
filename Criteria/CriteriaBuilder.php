@@ -33,12 +33,12 @@ class CriteriaBuilder
 
 
     /**
-     * Guess Pagination by Route
+     * Guess configuration by Route
      *
      * @param string|null $route
      * @return array
      */
-    public function guessPaginationByRoute($route = null)
+    public function guessConfigurationByRoute($route = null)
     {
         if (null === $route || count($this->configuration['routes']) == 0) {
             $this->configuration = $this->configuration['default'];
