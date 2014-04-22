@@ -65,17 +65,22 @@ class CriteriaBuilder
         }
 
         foreach ($criteria as $name => $value) {
-            if (null === $value) {
+            if (null === $value || $value === array()) {
                 unset($criteria[$name]);
                 continue;
             }
 
             if (is_array($value)) {
                 foreach ($value as $k => $v) {
-                    try {
-                        $criteria[$name][$k] = unserialize($v);
-                    } catch(\Exception $e) {
+                    if (null === $v) {
+                        unset($criteria[$name][$k]);
                         continue;
+                    } else {
+                        try {
+                            $criteria[$name][$k] = unserialize($v);
+                        } catch(\Exception $e) {
+                            continue;
+                        }
                     }
                 }
             }

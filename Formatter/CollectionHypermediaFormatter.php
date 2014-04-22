@@ -10,7 +10,7 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-class CollectionHypermediaFormatter extends HypermediaFormatter
+class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
 {
     protected $criteria = null;
     protected $limit = null;
@@ -20,19 +20,6 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     
     protected $totalCount;
     protected $objects;
-
-    /**
-     * Constructor
-     */
-    public function __construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format)
-    {
-        $this->currentRouteName = $currentRouteName;
-        $this->format = $format;
-        parent::__construct($router, $criteriaBuilder, $serializer);
-        
-        // Initialize configuration by route
-        $this->criteriaBuilder->guessConfigurationByRoute($currentRouteName);
-    }
 
     /**
      * {@inheritdoc }
@@ -281,18 +268,18 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     }
 
     /**
-     * Count objects query builder
+     * Prepare a query builder to count objects
      *
      * @param array $criteria
      * @return \Doctrine\ORM\QueryBuilder
      */
-    public function countObjectsQueryBuilder($criteria = null)
+    public function prepareQueryBuilderCount($criteria = null)
     {
         $qb = $this
             ->objectManager
-            ->createQueryBuilder()
-            ->select('COUNT(object.id)')
-            ->from($this->objectNamespace, 'object');
+            ->getRepository($this->objectNamespace)
+            ->createQueryBuilder('object')
+            ->select('COUNT(object.id)');
 
         if(is_null($criteria)) {
             return $qb;
@@ -311,9 +298,9 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
      * @param array $criteria
      * @return \Doctrine\ORM\Query
      */
-    public function countObjectsQuery($criteria = null)
+    public function prepareQueryCount($criteria = null)
     {
-        return $this->countObjectsQueryBuilder($criteria)->getQuery();
+        return $this->prepareQueryBuilderCount($criteria)->getQuery();
     }
 
     /**
@@ -325,7 +312,7 @@ class CollectionHypermediaFormatter extends HypermediaFormatter
     public function countObjects($criteria = null)
     {
         try {
-            return $this->countObjectsQuery($criteria)->getSingleScalarResult();
+            return $this->prepareQueryCount($criteria)->getSingleScalarResult();
         } catch(\Exception $e) {
             return 0;
         }

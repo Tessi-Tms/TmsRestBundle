@@ -12,8 +12,11 @@ namespace Tms\Bundle\RestBundle\Formatter;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Doctrine\Common\Persistence\ObjectManager;
+use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
+use Symfony\Component\Routing\Router;
+use JMS\Serializer\Serializer;
 
-class SingleHypermediaFormatter extends HypermediaFormatter
+class SingleHypermediaFormatter extends AbstractHypermediaFormatter
 {
     protected $objectId = null;
     protected $object = null;
@@ -22,16 +25,11 @@ class SingleHypermediaFormatter extends HypermediaFormatter
     /**
      * Constructor
      */
-    public function __construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format, $objectId)
+    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectId)
     {
-        $this->currentRouteName = $currentRouteName;
-        $this->format = $format;
         $this->objectId = $objectId;
 
-        parent::__construct($router, $criteriaBuilder, $serializer);
-
-        // Initialize configuration by route
-        $this->criteriaBuilder->guessConfigurationByRoute($currentRouteName);
+        parent::__construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format);
     }
 
     /**
