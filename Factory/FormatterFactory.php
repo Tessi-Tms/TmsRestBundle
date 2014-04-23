@@ -39,6 +39,7 @@ class FormatterFactory
      *
      * @param string $currentRouteName
      * @param string $format
+     * 
      * @return CollectionHypermediaFormatter
      */
     public function buildCollectionHypermediaFormatter($currentRouteName, $format)
@@ -57,10 +58,11 @@ class FormatterFactory
      *
      * @param string $currentRouteName
      * @param string $format
-     * @param string $objectId
+     * @param array  $objectFindParams
+     * 
      * @return SingleHypermediaFormatter
      */
-    public function buildSingleHypermediaFormatter($currentRouteName, $format, $objectId)
+    public function buildSingleHypermediaFormatter($currentRouteName, $format, array $objectFindParams)
     {
         return new SingleHypermediaFormatter(
             $this->router,
@@ -68,7 +70,7 @@ class FormatterFactory
             $this->serializer,
             $currentRouteName,
             $format,
-            $objectId
+            $objectFindParams
         );
     }
     

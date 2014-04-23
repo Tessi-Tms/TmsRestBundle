@@ -18,36 +18,41 @@ use JMS\Serializer\Serializer;
 
 class SingleHypermediaFormatter extends AbstractHypermediaFormatter
 {
-    protected $objectId = null;
+    protected $objectPK = null;
+    protected $objectPKValue = null;
     protected $object = null;
     protected $embedded = null;
 
     /**
      * Constructor
      */
-    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectId)
+    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectFindParams)
     {
-        $this->objectId = $objectId;
+        $this->objectPK = $objectFindParams['findKey'];
+        $this->objectPKValue = $objectFindParams['findValue'];
 
         parent::__construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format);
     }
 
     /**
-     * Dependency injection to set object manager to the formatter
+     * Find object thanks to objectPK and objectPKValue
      *
-     * @param ObjectManager $objectManager
-     * @param string $objectNamespace
+     * @return Object
      */
-    public function setObjectManager(ObjectManager $objectManager, $objectNamespace)
+    public function retrieveObject()
     {
-        $this->object = $objectManager
-            ->getRepository($objectNamespace)
-            ->findOneById($this->objectId);
-        if (!$this->object) {
-            throw new NotFoundHttpException();
-        }
+        if(!$this->object) {
+            $retrieveObjectMethod = sprintf("findOneBy%s", ucfirst($this->objectPK));
+            $object = $this->objectManager
+                ->getRepository($this->objectNamespace)
+                ->$retrieveObjectMethod($this->objectPKValue);
 
-        return parent::setObjectManager($objectManager, $objectNamespace);
+            if (!$object) {
+                throw new NotFoundHttpException();
+            }
+            
+            $this->object = $object;
+        }
     }
 
     /**
@@ -55,6 +60,8 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
      */
     public function format()
     {
+        $this->retrieveObject();
+
         return array(
             'metadata' => $this->formatMetadata(),
             'data'     => $this->formatData(),
@@ -96,8 +103,8 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
             $this->router->generate(
                 $this->currentRouteName,
                 array(
-                    '_format' => $this->format,
-                    'id'      => $this->object->getId(),
+                    '_format'       => $this->format,
+                    $this->objectPK => $this->objectPKValue,
                 ),
                 true
             )
@@ -131,6 +138,8 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
      */
     public function addEmbedded($embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
     {
+        $this->retrieveObject();
+
         if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
             $this->embedded[$embeddedName] = array(
                 'metadata' => array(
@@ -145,8 +154,8 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
                         'href' => $this->router->generate(
                             $embeddedCollectionRoute,
                             array(
-                                '_format' => $this->format,
-                                'id'      => $this->object->getId(),
+                                '_format'       => $this->format,
+                                $this->objectPK => $this->objectPKValue,
                             ),
                             true
                         )
