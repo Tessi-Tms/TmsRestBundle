@@ -71,11 +71,12 @@ abstract class AbstractHypermediaFormatter
      *
      * @return ClassMetadataCollection
      */
-    public function getClassMetadata()
+    public function getClassMetadata($namespace = null)
     {
+        $namespace = $namespace ? $namespace : $this->objectNamespace;
         return $this
             ->objectManager
-            ->getClassMetadata($this->objectNamespace);
+            ->getClassMetadata($namespace);
     }
 
     /**
@@ -83,11 +84,23 @@ abstract class AbstractHypermediaFormatter
      *
      * @return string
      */
-    public function getClassNamespace()
+    public function getClassNamespace($namespace = null)
     {
-        return $this->getClassMetadata()->getName();
+        return $this->getClassMetadata($namespace)->getName();
     }
 
+    /**
+     * Give a class identifier
+     *
+     * @return string
+     */
+    public function getClassIdentifier($namespace = null)
+    {
+        $identifiers = $this->getClassMetadata($namespace)->getIdentifier();
+
+        return $identifiers[0];
+    }
+ 
     /**
      * Format raw data to have hypermedia data in output
      *

@@ -18,31 +18,30 @@ use JMS\Serializer\Serializer;
 
 class SingleHypermediaFormatter extends AbstractHypermediaFormatter
 {
-    protected $objectPK = null;
     protected $objectPKValue = null;
     protected $object = null;
     protected $embedded = null;
 
     /**
      * Constructor
+     * 
      */
-    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectFindParams)
+    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectPKValue)
     {
-        $this->objectPK = $objectFindParams['findKey'];
-        $this->objectPKValue = $objectFindParams['findValue'];
+        $this->objectPKValue = $objectPKValue;
 
         parent::__construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format);
     }
 
     /**
-     * Find object thanks to objectPK and objectPKValue
+     * Find object thanks to params['primaryKey'] and params['primaryValue']
      *
      * @return Object
      */
     public function retrieveObject()
     {
         if(!$this->object) {
-            $retrieveObjectMethod = sprintf("findOneBy%s", ucfirst($this->objectPK));
+            $retrieveObjectMethod = sprintf("findOneBy%s", ucfirst($this->getClassIdentifier()));
             $object = $this->objectManager
                 ->getRepository($this->objectNamespace)
                 ->$retrieveObjectMethod($this->objectPKValue);
@@ -52,6 +51,7 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
             }
             
             $this->object = $object;
+            
         }
     }
 
@@ -103,8 +103,8 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
             $this->router->generate(
                 $this->currentRouteName,
                 array(
-                    '_format'       => $this->format,
-                    $this->objectPK => $this->objectPKValue,
+                    '_format'                   => $this->format,
+                    $this->getClassIdentifier() => $this->objectPKValue,
                 ),
                 true
             )
@@ -146,6 +146,7 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
                     'type' => $this->getEmbeddedNamespace($embeddedName)
                 ),
                 'data'  => $this->formatEmbeddedData(
+                    $embeddedName,
                     $embeddedSingleRoute,
                     $this->getEmbeddedData($embeddedName)
                 ),
@@ -154,8 +155,8 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
                         'href' => $this->router->generate(
                             $embeddedCollectionRoute,
                             array(
-                                '_format'       => $this->format,
-                                $this->objectPK => $this->objectPKValue,
+                                '_format' => $this->format,
+                                $this->getClassIdentifier() => $this->objectPKValue,
                             ),
                             true
                         )
@@ -209,15 +210,18 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
      *      )
      * )
      * 
+     * @param string $embeddedName
      * @param string $embeddedSingleRoute
      * @param string $embeddedObjects
      * @return array
      */
-    public function formatEmbeddedData($embeddedSingleRoute, $embeddedObjects)
+    public function formatEmbeddedData($embeddedName, $embeddedSingleRoute, $embeddedObjects)
     {
         $formattedObjects = array();
         
         foreach($embeddedObjects as $object) {
+            $getMethod = sprintf("get%s", ucfirst($this->getClassIdentifier()));
+        
             array_push($formattedObjects, array(
                 'data' => $object,
                 'links' => array(
@@ -226,7 +230,7 @@ class SingleHypermediaFormatter extends AbstractHypermediaFormatter
                             $embeddedSingleRoute,
                             array(
                                 '_format' => $this->format,
-                                'id'      => $object->getId(),
+                                $this->getClassIdentifier($this->getEmbeddedNamespace($embeddedName)) => $object->$getMethod(),
                             ),
                             true
                         )

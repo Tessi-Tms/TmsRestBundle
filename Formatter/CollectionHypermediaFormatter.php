@@ -12,14 +12,16 @@ namespace Tms\Bundle\RestBundle\Formatter;
 
 class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
 {
+    // Query params
     protected $criteria = null;
     protected $limit = null;
     protected $sort = null;
     protected $page = null;
     protected $offset = null;
-    
+
     protected $totalCount;
     protected $objects;
+    protected $itemRoutes = null;
 
     /**
      * {@inheritdoc }
@@ -36,6 +38,7 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
         ));
 
         // Retrieve objects according to a given criteria
+        $offsetWithPage = $this->offset+($this->page-1)*$this->limit;
         $this->objects = $this
             ->objectManager
             ->getRepository($this->objectNamespace)
@@ -43,7 +46,7 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
                 $this->criteria,
                 $this->sort,
                 $this->limit,
-                $this->offset
+                $offsetWithPage
             )
         ;
 
@@ -83,9 +86,67 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
      */
     public function formatData()
     {
-        return $this->objects;
+        $data = array();
+        foreach($this->objects as $object) {
+            
+            $data[] = array(
+                'metadata' => array(
+                    'type' => $this->objectNamespace
+                ),
+                'data'  => $data,
+                'links' => array(
+                    'self' => array(
+                        'href' => $this->generateItemLink($object)
+                    )
+                )
+            );
+            
+        }
+        return $data;
     }
 
+    /**
+     * Add a new route associated to an item namespace
+     *
+     * @param string $itemNamespace
+     * @param string $itemRoute
+     */
+    public function addItemRoute($itemNamespace, $itemRoute)
+    {
+        $this->itemRoutes[$itemNamespace][] = $itemRoute;
+    }
+
+    /**
+     * Generate an item link
+     *
+     * @param mixed $object
+     * 
+     * @return url
+     */
+    public function generateItemLink($object)
+    {
+        $itemNamespace = $this->getClassNamespace(get_class($object));
+        $getMethod = sprintf("get%s", ucfirst($this
+            ->getClassIdentifier($itemNamespace)
+        ));
+
+        if(!$this->itemRoutes) {
+            return sprintf("%s/%s.%s",
+                $this->router->generate($this->currentRouteName, true),
+                $object->$getMethod(),
+                $this->format
+            );
+        } else {
+            return $this->router->generate(
+                $this->itemRoutes[$itemNamespace],
+                array(
+                    '_format' => $this->format,
+                    $this->getClassIdentifier() => $object->$getMethod()
+                ),
+                true
+            );
+        }
+    }
     /**
      * Define the criteria according to the original value and configuration
      *
@@ -196,7 +257,12 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
                 'href' => $this->router->generate(
                     $this->currentRouteName,
                     array(
-                        '_format' => $this->format,
+                        '_format'   => $this->format,
+                        'page'      => $this->page,
+                        'criteria'  => $this->criteria,
+                        'sort'      => $this->sort,
+                        'limit'     => $this->limit,
+                        'offset'    => $this->offset
                     ),
                     true
                 )
@@ -222,6 +288,10 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
             array(
                 '_format' => $this->format,
                 'page'    => $this->page+1,
+                'criteria'  => $this->criteria,
+                'sort'      => $this->sort,
+                'limit'     => $this->limit,
+                'offset'    => $this->offset
             ),
             true
         );
@@ -240,8 +310,12 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
         return $this->router->generate(
             $this->currentRouteName,
             array(
-                '_format' => $this->format,
-                'page'    => $this->page-1,
+                '_format'   => $this->format,
+                'page'      => $this->page-1,
+                'criteria'  => $this->criteria,
+                'sort'      => $this->sort,
+                'limit'     => $this->limit,
+                'offset'    => $this->offset
             ),
             true
         );

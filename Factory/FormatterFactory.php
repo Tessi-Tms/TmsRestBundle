@@ -39,17 +39,19 @@ class FormatterFactory
      *
      * @param string $currentRouteName
      * @param string $format
+     * @param array  $objectParams
      * 
      * @return CollectionHypermediaFormatter
      */
-    public function buildCollectionHypermediaFormatter($currentRouteName, $format)
+    public function buildCollectionHypermediaFormatter($currentRouteName, $format, $singleRouteName)
     {
         return new CollectionHypermediaFormatter(
             $this->router,
             $this->criteriaBuilder,
             $this->serializer,
             $currentRouteName,
-            $format
+            $format,
+            $singleRouteName
         );
     }
 
@@ -58,11 +60,11 @@ class FormatterFactory
      *
      * @param string $currentRouteName
      * @param string $format
-     * @param array  $objectFindParams
+     * @param mixed  $objectPKValue
      * 
      * @return SingleHypermediaFormatter
      */
-    public function buildSingleHypermediaFormatter($currentRouteName, $format, array $objectFindParams)
+    public function buildSingleHypermediaFormatter($currentRouteName, $format, $objectPKValue)
     {
         return new SingleHypermediaFormatter(
             $this->router,
@@ -70,7 +72,7 @@ class FormatterFactory
             $this->serializer,
             $currentRouteName,
             $format,
-            $objectFindParams
+            $objectPKValue
         );
     }
     
