@@ -10,8 +10,8 @@
 
 namespace Tms\Bundle\RestBundle\Factory;
 
-use Tms\Bundle\RestBundle\Formatter\CollectionHypermediaFormatter;
-use Tms\Bundle\RestBundle\Formatter\SingleHypermediaFormatter;
+use Tms\Bundle\RestBundle\Formatter\DoctrineCollectionHypermediaFormatter;
+use Tms\Bundle\RestBundle\Formatter\DoctrineSingleHypermediaFormatter;
 use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Symfony\Component\Routing\Router;
 use JMS\Serializer\Serializer;
@@ -35,28 +35,26 @@ class FormatterFactory
     }
 
     /**
-     * Instantiate a CollectionHypermediaFormatter
+     * Instantiate a DoctrineCollectionHypermediaFormatter
      *
      * @param string $currentRouteName
      * @param string $format
-     * @param array  $objectParams
      * 
      * @return CollectionHypermediaFormatter
      */
-    public function buildCollectionHypermediaFormatter($currentRouteName, $format, $singleRouteName)
+    public function buildDoctrineCollectionHypermediaFormatter($currentRouteName, $format)
     {
-        return new CollectionHypermediaFormatter(
+        return new DoctrineCollectionHypermediaFormatter(
             $this->router,
             $this->criteriaBuilder,
             $this->serializer,
             $currentRouteName,
-            $format,
-            $singleRouteName
+            $format
         );
     }
 
     /**
-     * Instantiate a SingleHypermediaFormatter
+     * Instantiate a DoctrineSingleHypermediaFormatter
      *
      * @param string $currentRouteName
      * @param string $format
@@ -64,9 +62,9 @@ class FormatterFactory
      * 
      * @return SingleHypermediaFormatter
      */
-    public function buildSingleHypermediaFormatter($currentRouteName, $format, $objectPKValue)
+    public function buildDoctrineSingleHypermediaFormatter($currentRouteName, $format, $objectPKValue)
     {
-        return new SingleHypermediaFormatter(
+        return new DoctrineSingleHypermediaFormatter(
             $this->router,
             $this->criteriaBuilder,
             $this->serializer,

@@ -24,8 +24,6 @@ abstract class AbstractHypermediaFormatter
     protected $serializer;
     protected $router;
     protected $criteriaBuilder;
-    protected $objectManager;
-    protected $objectNamespace;
 
     // Formatters default attributes
     protected $currentRouteName;
@@ -33,7 +31,6 @@ abstract class AbstractHypermediaFormatter
 
     /**
      * Constructor
-     * 
      */
     public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format)
     {
@@ -50,57 +47,6 @@ abstract class AbstractHypermediaFormatter
         $this->criteriaBuilder->guessConfigurationByRoute($currentRouteName);
     }
 
-    /**
-     * Dependency injection to set object manager to the formatter
-     *
-     * @param ObjectManager $objectManager
-     * @param string $objectNamespace
-     * @return array
-     */
-    public function setObjectManager(ObjectManager $objectManager, $objectNamespace)
-    {
-        $this->objectManager = $objectManager;
-        $this->objectNamespace = $objectNamespace;
-
-        return $this;
-    }
-
-    /**
-     * Give a class metadata collection thanks to the
-     * object manager and the object class namespace
-     *
-     * @return ClassMetadataCollection
-     */
-    public function getClassMetadata($namespace = null)
-    {
-        $namespace = $namespace ? $namespace : $this->objectNamespace;
-        return $this
-            ->objectManager
-            ->getClassMetadata($namespace);
-    }
-
-    /**
-     * Give a class namespace
-     *
-     * @return string
-     */
-    public function getClassNamespace($namespace = null)
-    {
-        return $this->getClassMetadata($namespace)->getName();
-    }
-
-    /**
-     * Give a class identifier
-     *
-     * @return string
-     */
-    public function getClassIdentifier($namespace = null)
-    {
-        $identifiers = $this->getClassMetadata($namespace)->getIdentifier();
-
-        return $identifiers[0];
-    }
- 
     /**
      * Format raw data to have hypermedia data in output
      *
@@ -128,4 +74,11 @@ abstract class AbstractHypermediaFormatter
      * @return array
      */
     abstract public function formatLinks();
+
+    /**
+     * Give object type
+     *
+     * @return string
+     */
+    abstract public function getType();
 }

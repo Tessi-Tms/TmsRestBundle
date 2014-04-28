@@ -10,7 +10,7 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
+class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
     // Query params
     protected $criteria = null;
@@ -18,48 +18,23 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
     protected $sort = null;
     protected $page = null;
     protected $offset = null;
+    protected $totalCount = null;
 
-    protected $totalCount;
     protected $objects;
     protected $itemRoutes = null;
-
+    
     /**
      * {@inheritdoc }
      */
     public function format()
     {
-        // Set default values if some parameters are missing
-        $this->clean(array(
-            'criteria' => $this->criteria,
-            'limit'    => $this->limit,
-            'sort'     => $this->sort,
-            'page'     => $this->page,
-            'offset'   => $this->offset
-        ));
-
-        // Retrieve objects according to a given criteria
-        $offsetWithPage = $this->offset+($this->page-1)*$this->limit;
-        $this->objects = $this
-            ->objectManager
-            ->getRepository($this->objectNamespace)
-            ->findBy(
-                $this->criteria,
-                $this->sort,
-                $this->limit,
-                $offsetWithPage
-            )
-        ;
-
-        // Count objects according to a given criteria
-        $this->totalCount = $this->countObjects($this->criteria);
- 
         return array(
             'metadata' => $this->formatMetadata(),
             'data'     => $this->formatData(),
             'links'    => $this->formatLinks()
         );
     }
-
+    
     /**
      * Format metadata into a given layout for hypermedia
      *
@@ -68,13 +43,16 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
      */
     public function formatMetadata()
     {
-        return array(
-            'type'          => $this->getClassNamespace(),
-            'page'          => $this->page,
-            'pageCount'     => $this->computePageCount(),
-            'totalCount'    => $this->totalCount,
-            'limit'         => $this->limit,
-            'offset'        => $this->offset
+        return array_merge(
+            array(
+                'type'          => $this->getType(),
+                'page'          => $this->page,
+                'pageCount'     => $this->computePageCount(),
+                'totalCount'    => $this->totalCount,
+                'limit'         => $this->limit,
+                'offset'        => $this->offset
+            ),
+            $this->criteria
         );
     }
 
@@ -91,9 +69,9 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
             
             $data[] = array(
                 'metadata' => array(
-                    'type' => $this->objectNamespace
+                    'type' => $this->getType()
                 ),
-                'data'  => $data,
+                'data'  => $object,
                 'links' => array(
                     'self' => array(
                         'href' => $this->generateItemLink($object)
@@ -106,47 +84,38 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
     }
 
     /**
-     * Add a new route associated to an item namespace
+     * Retrieve objects from repository
      *
-     * @param string $itemNamespace
-     * @param string $itemRoute
      */
-    public function addItemRoute($itemNamespace, $itemRoute)
+    public function getObjectsFromRepository()
     {
-        $this->itemRoutes[$itemNamespace][] = $itemRoute;
-    }
-
-    /**
-     * Generate an item link
-     *
-     * @param mixed $object
-     * 
-     * @return url
-     */
-    public function generateItemLink($object)
-    {
-        $itemNamespace = $this->getClassNamespace(get_class($object));
-        $getMethod = sprintf("get%s", ucfirst($this
-            ->getClassIdentifier($itemNamespace)
+        // Set default values if some parameters are missing
+        $this->clean(array(
+            'criteria' => $this->criteria,
+            'limit'    => $this->limit,
+            'sort'     => $this->sort,
+            'page'     => $this->page,
+            'offset'   => $this->offset
         ));
 
-        if(!$this->itemRoutes) {
-            return sprintf("%s/%s.%s",
-                $this->router->generate($this->currentRouteName, true),
-                $object->$getMethod(),
-                $this->format
-            );
-        } else {
-            return $this->router->generate(
-                $this->itemRoutes[$itemNamespace],
-                array(
-                    '_format' => $this->format,
-                    $this->getClassIdentifier() => $object->$getMethod()
-                ),
-                true
-            );
-        }
+        // Count objects according to a given criteria
+        $this->totalCount = $this->countObjects($this->criteria);
+
+        // Retrieve objects according to a given criteria
+        $this->objects = $this
+            ->objectManager
+            ->getRepository($this->objectNamespace)
+            ->findBy(
+                $this->criteria,
+                $this->sort,
+                $this->limit,
+                $this->computeOffsetWithPage()
+            )
+        ;
+
+        return $this;
     }
+
     /**
      * Define the criteria according to the original value and configuration
      *
@@ -166,7 +135,7 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
     /**
      * Define the limit according to the original value and configuration
      *
-     * @param array $limit
+     * @param integer $limit
      * @return $this
      */
     public function setLimit($limit = null)
@@ -198,7 +167,7 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
     /**
      * Define the page according to the original value and configuration
      *
-     * @param array $page
+     * @param integer $page
      * @return $this
      */
     public function setPage($page = null)
@@ -214,7 +183,7 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
     /**
      * Define the offset according to the original value and configuration
      *
-     * @param array $offset
+     * @param integer $offset
      * @return $this
      */
     public function setOffset($offset = null)
@@ -256,20 +225,53 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
             'self' => array(
                 'href' => $this->router->generate(
                     $this->currentRouteName,
-                    array(
-                        '_format'   => $this->format,
-                        'page'      => $this->page,
-                        'criteria'  => $this->criteria,
-                        'sort'      => $this->sort,
-                        'limit'     => $this->limit,
-                        'offset'    => $this->offset
+                    array_merge(
+                        array(
+                            '_format'   => $this->format,
+                            'page'      => $this->page,
+                            'sort'      => $this->sort,
+                            'limit'     => $this->limit,
+                            'offset'    => $this->offset
+                        ),
+                        $this->criteria
                     ),
                     true
                 )
             ),
-            'next' => $this->generateNextLink(),
-            'previous' => $this->generatePreviousLink()
+            'next'      => $this->generateNextLink(),
+            'previous'  => $this->generatePreviousLink()
         );
+    }
+
+    /**
+     * Generate an item link
+     *
+     * @param mixed $object
+     * @return url
+     */
+    public function generateItemLink($object)
+    {
+        $itemNamespace = $this->getClassNamespace(get_class($object));
+        $getMethod = sprintf("get%s", ucfirst($this
+            ->getClassIdentifier($itemNamespace)
+        ));
+
+        if(!$this->itemRoutes) {
+            return sprintf("%s/%s.%s",
+                $this->router->generate($this->currentRouteName, array(), true),
+                $object->$getMethod(),
+                $this->format
+            );
+        } else {
+            return $this->router->generate(
+                $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)],
+                array(
+                    '_format' => $this->format,
+                    $this->getClassIdentifier() => $object->$getMethod()
+                ),
+                true
+            );
+        }
     }
 
     /**
@@ -286,8 +288,8 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
         return $this->router->generate(
             $this->currentRouteName,
             array(
-                '_format' => $this->format,
-                'page'    => $this->page+1,
+                '_format'   => $this->format,
+                'page'      => $this->page+1,
                 'criteria'  => $this->criteria,
                 'sort'      => $this->sort,
                 'limit'     => $this->limit,
@@ -324,21 +326,46 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
     /**
      * Compute the actual elements number of a page in a collection
      *
-     * @return int
+     * @return integer
      */
     public function computePageCount()
     {
-        if($this->offset > $this->totalCount) {
+        if($this->computeOffsetWithPage() > $this->totalCount) {
             return 0;
         } else {
-            if($this->totalCount-$this->offset > $this->limit) {
+            if($this->totalCount-$this->computeOffsetWithPage() > $this->limit) {
                 return $this->limit;
             } else {
-               return $this->totalCount-$this->offset; 
+               return $this->totalCount-$this->computeOffsetWithPage(); 
             }
         }
 
         return 0;
+    }
+
+    /**
+     * Compute the offset according to the page number
+     *
+     * @return integer
+     */
+    public function computeOffsetWithPage()
+    {
+        return $this->offset+($this->page-1)*$this->limit;
+    }
+
+    /**
+     * Add a new route associated to an item namespace
+     *
+     * @param string $itemNamespace
+     * @param string $itemRoute
+     * 
+     * @return $this
+     */
+    public function addItemRoute($itemNamespace, $itemRoute)
+    {
+        $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)] = $itemRoute;
+        
+        return $this;
     }
 
     /**
@@ -360,7 +387,8 @@ class CollectionHypermediaFormatter extends AbstractHypermediaFormatter
         }
 
         foreach($criteria as $name => $value) {
-            $qb->andWhere(sprintf('object.%s = %s', $name, $value));
+            $qb->andWhere(sprintf('object.%s = :%s', $name, $name));
+            $qb->setParameter($name, $value);
         }
 
         return $qb;
