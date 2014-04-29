@@ -20,7 +20,8 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
     protected $objectPKValue = null;
     protected $object = null;
     protected $embeddedObjects = null;
-    
+    protected $relatedObjects = null;
+
     /**
      * Constructor
      */
@@ -36,6 +37,8 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
      */
     public function format()
     {
+        $this->getObjectFromRepository();
+
         return array(
             'metadata' => $this->formatMetadata(),
             'data'     => $this->formatData(),
@@ -73,11 +76,11 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
      */
     public function formatLinks()
     {
-        return array('self' => 
-            $this->generateSelfLink(
+        return array(
+            'self' => $this->generateSelfLink(
                 $this->currentRouteName,
                 $this->object
-            )
+            ),
         );
     }
 
@@ -98,67 +101,55 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
     }
 
     /**
-     * Format embedded data of 2nd depth into a given layout for hypermedia
-     * array(
-     *      'data'     => X,
-     *      'metadata' => X
-     *      'links'    => X,
-     *      'embedded' => array(
-     *          'data'     => $this->formatEmbeddedData(X, X),
-     *          'metadata' => X
-     *          'links'    => X,
-     *      )
-     * )
-     * 
-     * @param string $embeddedName
-     * @param string $embeddedSingleRoute
-     * @param string $embeddedObjects
-     * 
-     * @return array
-     */
-    public function formatEmbeddedData($embeddedSingleRoute, $embeddedObjects)
-    {
-        $formattedEmbeddedData = array();
-
-        foreach($embeddedObjects as $object) {
-            $formattedEmbeddedData[] = array(
-                'data' => $object,
-                'links' => array(
-                    'self' => array(
-                        'href' => $this->generateSelfLink(
-                            $embeddedSingleRoute,
-                            $object
-                        )
-                    )
-                ),
-                'metadata' => array()
-            );
-        }
-
-        return $formattedEmbeddedData;
-    }
-
-    /**
-     * Find object thanks to params['primaryKey'] and params['primaryValue']
+     * Find single object from repository with objectPKValue
      *
      * @return Object
      */
     public function getObjectFromRepository()
     {
         if(!$this->object) {
-            $retrieveObjectMethod = sprintf("findOneBy%s", ucfirst($this->getClassIdentifier()));
+            $findOneByMethod = sprintf("findOneBy%s", ucfirst($this->getClassIdentifier()));
             $object = $this->objectManager
                 ->getRepository($this->objectNamespace)
-                ->$retrieveObjectMethod($this->objectPKValue);
+                ->$findOneByMethod($this->objectPKValue);
 
             if (!$object) {
                 throw new NotFoundHttpException();
             }
-            
+
             $this->object = $object;
-            
         }
-        
+
+        return $this;
+    }
+
+    /**
+     * Get the given sub-resource of an entity
+     *
+     * @param Object $object
+     * @param string $relatedName
+     * @return array
+     */
+    public function getRelatedEntitiesFromRepository($relatedName)
+    {
+        $this->getObjectFromRepository();
+
+        $methodName = sprintf('get%s', ucfirst($relatedName));
+        if (!method_exists($this->object, $methodName)) {
+            throw new \RuntimeException(sprintf(
+                'The method %s does not exist in class %s.',
+                $methodName,
+                get_class($this->object)
+            ));
+        }
+
+        $data = array();
+        $elements = $this->object->$methodName();
+        foreach ($elements as $element) {
+            array_push($data, $element);
+        }
+        $this->relatedObjects = $data;
+
         return $this;
     }
 
@@ -174,30 +165,26 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
      */
     public function addEmbedded($embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
     {
+        $this->getObjectFromRepository();
+
         if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
             $this->embeddedObjects[$embeddedName] = array(
                 'metadata' => array(
                     'type' => $this->getEmbeddedNamespace($embeddedName)
                 ),
                 'data'  => $this->formatEmbeddedData(
-                    $embeddedSingleRoute,
-                    $this->getEmbeddedData($embeddedName)
+                    $embeddedName,
+                    $embeddedSingleRoute
                 ),
                 'links' => array(
-                    'self' => array(
-                        'href' => $this->router->generate(
-                            $embeddedCollectionRoute,
-                            array(
-                                '_format' => $this->format,
-                                $this->getClassIdentifier() => $this->objectPKValue,
-                            ),
-                            true
-                        )
+                    'href' => $this->generateSelfLink(
+                        $embeddedCollectionRoute,
+                        $this->object
                     )
                 )
             );
         }
-        
+
         return $this;
     }
 
@@ -211,13 +198,14 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
      */
     public function generateSelfLink($routeName, $object)
     {
-        $getMethod = sprintf("get%s", ucfirst($this->getClassIdentifier(get_class($object))));
+        $classIdentifier = $this->getClassIdentifier(get_class($object));
+        $getMethod = sprintf("get%s", ucfirst($classIdentifier));
         
         return $this->router->generate(
             $routeName,
             array(
                 '_format' => $this->format,
-                $this->getClassIdentifier(get_class($object)) => $object->$getMethod(),
+                $classIdentifier => $object->$getMethod(),
             ),
             true
         );
@@ -265,5 +253,47 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
         return $this
             ->getClassMetadata()
             ->associationMappings[$embeddedName]['targetEntity'];
+    }
+
+    /**
+     * Format embedded data of 2nd depth into a given layout for hypermedia
+     * array(
+     *      'data'     => X,
+     *      'metadata' => X
+     *      'links'    => X,
+     *      'embedded' => array(
+     *          'data'     => $this->formatEmbeddedData($embeddedName, $embeddedSingleRoute),
+     *          'metadata' => X
+     *          'links'    => X,
+     *      )
+     * )
+     * 
+     * @param string $embeddedName
+     * @param string $embeddedSingleRoute
+     * 
+     * @return array formatted embedded data
+     */
+    public function formatEmbeddedData($embeddedName, $embeddedSingleRoute)
+    {
+        $formattedEmbeddedData = array();
+
+        foreach($this->getEmbeddedData($embeddedName) as $object) {
+            $formattedEmbeddedData[] = array(
+                'data' => $object,
+                'links' => array(
+                    'self' => array(
+                        'href' => $this->generateSelfLink(
+                            $embeddedSingleRoute,
+                            $object
+                        )
+                    )
+                ),
+                'metadata' => array(
+                    'type' => $this->getEmbeddedNamespace($embeddedName)
+                ),
+            );
+        }
+
+        return $formattedEmbeddedData;
     }
 }

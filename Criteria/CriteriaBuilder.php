@@ -53,12 +53,12 @@ class CriteriaBuilder
     }
 
     /**
-     * Define the criteria according to the original value and the defined configuration
+     * Clean the criteria value
      *
      * @param array $criteria
      * @return array
      */
-    public function defineCriteriaValue($criteria = null)
+    public function cleanCriteriaValue($criteria = null)
     {
         if(is_null($criteria)) {
             return array();
@@ -71,18 +71,7 @@ class CriteriaBuilder
             }
 
             if (is_array($value)) {
-                foreach ($value as $k => $v) {
-                    if (null === $v) {
-                        unset($criteria[$name][$k]);
-                        continue;
-                    } else {
-                        try {
-                            $criteria[$name][$k] = unserialize($v);
-                        } catch(\Exception $e) {
-                            continue;
-                        }
-                    }
-                }
+                $criteria[$name] = $this->cleanCriteriaValue($value);
             }
         }
         

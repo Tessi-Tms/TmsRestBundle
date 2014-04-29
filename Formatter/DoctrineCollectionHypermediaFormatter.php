@@ -10,6 +10,8 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
+use Doctrine\ORM\QueryBuilder;
+
 class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
     // Query params
@@ -28,13 +30,15 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      */
     public function format()
     {
+        $this->getObjectsFromRepository();
+
         return array(
             'metadata' => $this->formatMetadata(),
             'data'     => $this->formatData(),
             'links'    => $this->formatLinks()
         );
     }
-    
+
     /**
      * Format metadata into a given layout for hypermedia
      *
@@ -52,7 +56,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                 'limit'         => $this->limit,
                 'offset'        => $this->offset
             ),
-            $this->criteria
+            $this->cleanCriteriaForLinks()
         );
     }
 
@@ -66,7 +70,6 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     {
         $data = array();
         foreach($this->objects as $object) {
-            
             $data[] = array(
                 'metadata' => array(
                     'type' => $this->getType()
@@ -78,19 +81,20 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                     )
                 )
             );
-            
         }
+
         return $data;
     }
 
     /**
      * Retrieve objects from repository
      *
+     * @return Collection<Object>
      */
     public function getObjectsFromRepository()
     {
         // Set default values if some parameters are missing
-        $this->clean(array(
+        $this->cleanAndSetQueryParams(array(
             'criteria' => $this->criteria,
             'limit'    => $this->limit,
             'sort'     => $this->sort,
@@ -103,21 +107,78 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
 
         // Retrieve objects according to a given criteria
         $this->objects = $this
-            ->objectManager
-            ->getRepository($this->objectNamespace)
-            ->findBy(
-                $this->criteria,
-                $this->sort,
-                $this->limit,
-                $this->computeOffsetWithPage()
-            )
-        ;
+            ->findByQueryBuilder()
+            ->getQuery()
+            ->execute();
 
         return $this;
     }
 
     /**
-     * Define the criteria according to the original value and configuration
+     * Return a Query Builder to find objects according to params
+     *
+     * @return QueryBuilder
+     */
+    public function findByQueryBuilder()
+    {
+        $qb = $this
+            ->objectManager
+            ->getRepository($this->objectNamespace)
+            ->createQueryBuilder('object')
+        ;
+
+        $this->addSortToQueryBuilder($qb);
+        $this->addCriteriaToQueryBuilder($qb);
+
+        $qb->setFirstResult($this->computeOffsetWithPage());
+        $qb->setMaxResults($this->limit);
+
+        return $qb;
+    }
+
+    /**
+     * Add query sort to a Query Builder
+     *
+     * @return QueryBuilder
+     */
+    public function addSortToQueryBuilder(QueryBuilder $qb)
+    {
+        foreach($this->sort as $field => $order) {
+            $qb->addOrderBy(sprintf('object.%s', $field), $order);
+        }
+
+        return $qb;
+    }
+    
+    /**
+     * Add query criteria to a Query Builder
+     *
+     * @return QueryBuilder
+     */
+    public function addCriteriaToQueryBuilder(QueryBuilder $qb)
+    {
+        if(!$this->criteria) {
+            return $qb;
+        }
+
+        foreach($this->criteria as $column => $value) {
+            if(is_array($value)) {
+                foreach($value as $k => $v) {
+                    $qb->join(sprintf('object.%s', $column), $column);
+                    $qb->andWhere(sprintf('%s.%s = :%s', $column, $k, $column));
+                    $qb->setParameter($column, $v);
+                }
+            } else {
+                $qb->andWhere(sprintf('object.%s = :%s', $column, $column));
+                $qb->setParameter($column, $value);
+            }
+        }
+
+        return $qb;
+    }
+
+    /**
+     * Set the criteria
      *
      * @param array $criteria
      * @return $this
@@ -126,14 +187,14 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     {
         $this->criteria = $this
             ->criteriaBuilder
-            ->defineCriteriaValue($criteria)
+            ->cleanCriteriaValue($criteria)
         ;
-        
+
         return $this;
     }
     
     /**
-     * Define the limit according to the original value and configuration
+     * Set the limit
      *
      * @param integer $limit
      * @return $this
@@ -149,7 +210,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
     
     /**
-     * Define the sort according to the original value and configuration
+     * Set the sort
      *
      * @param array $sort
      * @return $this
@@ -165,7 +226,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
     
     /**
-     * Define the page according to the original value and configuration
+     * Set the page
      *
      * @param integer $page
      * @return $this
@@ -181,7 +242,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
-     * Define the offset according to the original value and configuration
+     * Set the offset
      *
      * @param integer $offset
      * @return $this
@@ -201,7 +262,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @param array $parameters
      */
-    public function clean(array $params)
+    public function cleanAndSetQueryParams(array $params)
     {
         foreach($params as $name => $value) {
             if(is_null($value)) {
@@ -233,7 +294,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                             'limit'     => $this->limit,
                             'offset'    => $this->offset
                         ),
-                        $this->criteria
+                        $this->cleanCriteriaForLinks()
                     ),
                     true
                 )
@@ -244,6 +305,27 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
+     * Clean criteria to simplify complex array criteria into simple array
+     *
+     * @return array
+     */
+    public function cleanCriteriaForLinks()
+    {
+        $cleanedCriteria = array();
+        foreach($this->criteria as $column => $value) {
+            if(is_array($value)) {
+                foreach($value as $k => $v) {
+                    $cleanedCriteria[$k] = $v;
+                }
+            } else {
+                $cleanedCriteria[$column] = $value;
+            }
+        }
+
+        return $cleanedCriteria;
+    }
+    
+    /**
      * Generate an item link
      *
      * @param mixed $object
@@ -252,14 +334,14 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     public function generateItemLink($object)
     {
         $itemNamespace = $this->getClassNamespace(get_class($object));
-        $getMethod = sprintf("get%s", ucfirst($this
+        $getKeyMethod = sprintf("get%s", ucfirst($this
             ->getClassIdentifier($itemNamespace)
         ));
 
         if(!$this->itemRoutes) {
             return sprintf("%s/%s.%s",
                 $this->router->generate($this->currentRouteName, array(), true),
-                $object->$getMethod(),
+                $object->$getKeyMethod(),
                 $this->format
             );
         } else {
@@ -267,7 +349,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                 $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)],
                 array(
                     '_format' => $this->format,
-                    $this->getClassIdentifier() => $object->$getMethod()
+                    $this->getClassIdentifier($itemNamespace) => $object->$getKeyMethod()
                 ),
                 true
             );
@@ -287,13 +369,15 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
 
         return $this->router->generate(
             $this->currentRouteName,
-            array(
-                '_format'   => $this->format,
-                'page'      => $this->page+1,
-                'criteria'  => $this->criteria,
-                'sort'      => $this->sort,
-                'limit'     => $this->limit,
-                'offset'    => $this->offset
+            array_merge(
+                array(
+                    '_format'   => $this->format,
+                    'page'      => $this->page+1,
+                    'sort'      => $this->sort,
+                    'limit'     => $this->limit,
+                    'offset'    => $this->offset
+                ),
+                $this->cleanCriteriaForLinks()
             ),
             true
         );
@@ -311,13 +395,15 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
 
         return $this->router->generate(
             $this->currentRouteName,
-            array(
-                '_format'   => $this->format,
-                'page'      => $this->page-1,
-                'criteria'  => $this->criteria,
-                'sort'      => $this->sort,
-                'limit'     => $this->limit,
-                'offset'    => $this->offset
+            array_merge(
+                array(
+                    '_format'   => $this->format,
+                    'page'      => $this->page-1,
+                    'sort'      => $this->sort,
+                    'limit'     => $this->limit,
+                    'offset'    => $this->offset
+                ),
+                $this->cleanCriteriaForLinks()
             ),
             true
         );
@@ -371,10 +457,9 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     /**
      * Prepare a query builder to count objects
      *
-     * @param array $criteria
      * @return \Doctrine\ORM\QueryBuilder
      */
-    public function prepareQueryBuilderCount($criteria = null)
+    public function prepareQueryBuilderCount()
     {
         $qb = $this
             ->objectManager
@@ -382,14 +467,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
             ->createQueryBuilder('object')
             ->select('COUNT(object.id)');
 
-        if(is_null($criteria)) {
-            return $qb;
-        }
-
-        foreach($criteria as $name => $value) {
-            $qb->andWhere(sprintf('object.%s = :%s', $name, $name));
-            $qb->setParameter($name, $value);
-        }
+        $this->addCriteriaToQueryBuilder($qb);
 
         return $qb;
     }
@@ -397,24 +475,22 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     /**
      * Count objects query
      *
-     * @param array $criteria
      * @return \Doctrine\ORM\Query
      */
-    public function prepareQueryCount($criteria = null)
+    public function prepareQueryCount()
     {
-        return $this->prepareQueryBuilderCount($criteria)->getQuery();
+        return $this->prepareQueryBuilderCount()->getQuery();
     }
 
     /**
      * Count objects
      *
-     * @param array $criteria
      * @return integer
      */
-    public function countObjects($criteria = null)
+    public function countObjects()
     {
         try {
-            return $this->prepareQueryCount($criteria)->getSingleScalarResult();
+            return $this->prepareQueryCount()->getSingleScalarResult();
         } catch(\Exception $e) {
             return 0;
         }
