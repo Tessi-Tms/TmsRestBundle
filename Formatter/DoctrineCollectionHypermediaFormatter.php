@@ -117,7 +117,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     /**
      * Return a Query Builder to find objects according to params
      *
-     * @return QueryBuilder
+     * @return Doctrine\ORM\QueryBuilder
      */
     public function findByQueryBuilder()
     {
@@ -139,7 +139,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     /**
      * Add query sort to a Query Builder
      *
-     * @return QueryBuilder
+     * @return Doctrine\ORM\QueryBuilder
      */
     public function addSortToQueryBuilder(QueryBuilder $qb)
     {
@@ -149,11 +149,11 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
 
         return $qb;
     }
-    
+
     /**
      * Add query criteria to a Query Builder
      *
-     * @return QueryBuilder
+     * @return Doctrine\ORM\QueryBuilder
      */
     public function addCriteriaToQueryBuilder(QueryBuilder $qb)
     {
