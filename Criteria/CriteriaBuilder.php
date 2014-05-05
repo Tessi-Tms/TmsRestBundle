@@ -89,17 +89,17 @@ class CriteriaBuilder
         $defaultLimit = $this->configuration['pagination']['limit'];
         if (is_null($originalValue)) {
             if ($defaultLimit['default'] > $defaultLimit['maximum']) {
-                return $defaultLimit['maximum'];
+                return intval($defaultLimit['maximum']);
             }
 
-            return $defaultLimit['default'];
+            return intval($defaultLimit['default']);
         }
 
         if (intval($originalValue) > $defaultLimit['maximum']) {
-            return $defaultLimit['maximum'];
+            return intval($defaultLimit['maximum']);
         }
 
-        return $originalValue;
+        return intval($originalValue);
     }
     
     /**
@@ -138,10 +138,10 @@ class CriteriaBuilder
     {
         $defaultPage = $this->configuration['pagination']['page'];
         if(is_null($originalValue)) {
-            return $defaultPage['default'];
+            return intval($defaultPage['default']);
         }
 
-        return $originalValue;
+        return intval($originalValue);
     }
     
     /**
@@ -154,9 +154,9 @@ class CriteriaBuilder
     {
         $defaultOffset = $this->configuration['pagination']['offset'];
         if (is_null($originalValue)) {
-            return $defaultOffset['default'];
+            return intval($defaultOffset['default']);
         }
 
-        return $originalValue;
+        return intval($originalValue);
     }
 }

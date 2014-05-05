@@ -20,7 +20,6 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
     protected $objectPKValue = null;
     protected $object = null;
     protected $embeddedObjects = null;
-    protected $relatedObjects = null;
 
     /**
      * Constructor
@@ -124,36 +123,6 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
     }
 
     /**
-     * Get the given sub-resource of an entity
-     *
-     * @param Object $object
-     * @param string $relatedName
-     * @return array
-     */
-    public function getRelatedEntitiesFromRepository($relatedName)
-    {
-        $this->getObjectFromRepository();
-
-        $methodName = sprintf('get%s', ucfirst($relatedName));
-        if (!method_exists($this->object, $methodName)) {
-            throw new \RuntimeException(sprintf(
-                'The method %s does not exist in class %s.',
-                $methodName,
-                get_class($this->object)
-            ));
-        }
-
-        $data = array();
-        $elements = $this->object->$methodName();
-        foreach ($elements as $element) {
-            array_push($data, $element);
-        }
-        $this->relatedObjects = $data;
-
-        return $this;
-    }
-
-    /**
      * Add an embedded element to a single hypermedia object
      * You can chain this method easily
      *
@@ -200,7 +169,7 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
     {
         $classIdentifier = $this->getClassIdentifier(get_class($object));
         $getMethod = sprintf("get%s", ucfirst($classIdentifier));
-        
+
         return $this->router->generate(
             $routeName,
             array(

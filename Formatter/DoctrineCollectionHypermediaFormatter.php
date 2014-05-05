@@ -457,7 +457,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     /**
      * Prepare a query builder to count objects
      *
-     * @return \Doctrine\ORM\QueryBuilder
+     * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
     public function prepareQueryBuilderCount()
     {
@@ -473,9 +473,9 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
-     * Count objects query
+     * Prepare a query to count objects
      *
-     * @return \Doctrine\ORM\Query
+     * @return \Doctrine\ORM\Query | Doctrine\ODM\MongoDB\Query\Query
      */
     public function prepareQueryCount()
     {
@@ -490,7 +490,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     public function countObjects()
     {
         try {
-            return $this->prepareQueryCount()->getSingleScalarResult();
+            return intval($this->prepareQueryCount()->getSingleScalarResult());
         } catch(\Exception $e) {
             return 0;
         }
