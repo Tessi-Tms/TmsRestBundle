@@ -12,14 +12,16 @@ and give all the parameters to the service to format in hypermedia the object.
 
 Let's take an example with Offer object.
 
-Usually yo have two different needs :
+Usually yo have three different needs :
 * List all objects in hypermedia mode
+* List all related objects of an object in hypermedia mode
+(list all products of an offer for instance)
 * Retrieve an object in hypermedia mode
 
 All the magical is in tms.rest.formatter.hypermedia service.
 
 This service is able to :
-* build collection/single formatter
+* build collection/related objects/single formatter
 * set the required object manager
 * set all optionnal parameters
 * format object in hypermedia mode
@@ -55,17 +57,15 @@ List all offers
         $view = $this->view(
             $this
                 ->get('tms.rest.formatter.hypermedia') // hypermedia serfice
-                ->buildCollectionFormatter(
+                ->buildDoctrineCollectionHypermediaFormatter(
                     $this->getRequest()->get('_route'),
                     $this->getRequest()->getRequestFormat()
                 )
-                // To build a collection formatter, the current route 
-                // and format are required
+                // To build a collection formatter, the CURRENT ROUTE
+                // and FORMAT are REQUIRED
                 ->setObjectManager(
                     $this->get('doctrine.orm.entity_manager'),
-                    $this
-                        ->get('tms_operation.manager.offer')
-                        ->getEntityClass() // Return Offer object class
+                    'Foo\Entity\Offer' // Offer object class
                 )
                 // The object manager (odm OR orm) and the object namespace
                 // are required to set the object manager
@@ -116,18 +116,16 @@ Retrieve one offer
             $view = $this->view(
             $this
                 ->get('tms.rest.formatter.hypermedia')
-                ->buildSingleFormatter(
+                ->buildDoctrineSingleHypermediaFormatter(
                     $this->getRequest()->get('_route'),
                     $this->getRequest()->getRequestFormat(),
                     $id
                 )
-                // To build a collection formatter, the current route, format
-                // and object ID are required
+                // To build a single formatter, the CURRENT ROUTE, FORMAT
+                // and OBJECT ID are REQUIRED
                 ->setObjectManager(
                     $this->get('doctrine.orm.entity_manager'),
-                    $this
-                        ->get('tms_operation.manager.offer')
-                        ->getEntityClass()
+                     'Foo\Entity\Offer' // Offer object class
                 )
                 // Same parameters as for a collection
                 ->addEmbedded(
@@ -164,12 +162,97 @@ Retrieve one offer
     }
 ```
 
-As you can see, two contexts of serialization are available :
+List all products related to an offer
+-------------------------------------
+
+```php
+    /**
+     * [GET] /offers/{id}/products
+     * Retrieve the products of an offer
+     * 
+     * @QueryParam(name="limit", requirements="\d+", strict=true, nullable=true, description="(optional) Pagination limit")
+     * @QueryParam(name="offset", requirements="\d+", strict=true, nullable=true, description="(optional) Pagination offset")
+     * @QueryParam(name="page", requirements="\d+", strict=true, nullable=true, description="(optional) Page number")
+     * @QueryParam(name="sort_field", nullable=true, description="(optional) Sort field")
+     * @QueryParam(name="sort_order", nullable=true, description="(optional) Sort order")
+     * 
+     * @param string $id
+     * @param integer $limit
+     * @param integer $offset
+     * @param integer $page
+     * @param string $sort_field
+     * @param string $sort_order
+     */
+    public function getOfferProductsAction(
+        $id,
+        $limit      = null,
+        $offset     = null,
+        $page       = null,
+        $sort_field = null,
+        $sort_order = null
+    )
+    {
+        try {
+            $view = $this->view(
+            $this
+                ->get('tms.rest.formatter.factory')
+                ->buildDoctrineCollectionHypermediaFormatter(
+                    $this->getRequest()->get('_route'),
+                    $this->getRequest()->getRequestFormat()
+                )
+                ->setObjectManager(
+                    $this->get('doctrine.orm.entity_manager'),
+                    'Foo\Entity\Product' // PRODUCT object class
+                    //(i.e. class of the related collection you need to retrieve)
+                )
+                ->addItemRoute(
+                    'Foo\Entity\Offer' // Product object class
+                    'api_products_get_product' // Route to show single product
+                )
+                // addItemRoute is required to generate links of the related collection;
+                // for simple collection the item route is guessed you don't need to use it
+                ->setCriteria(array(
+                    'offers' => array(
+                        'id' => $id
+                    )
+                ))
+                // This complex criteria means that the "offers" property of
+                // the Product entity must match the Offer id given in params
+                ->setSort(array(
+                    $sort_field => $sort_order,
+                ))
+                ->setLimit($limit)
+                ->setOffset($offset)
+                ->setPage($page)
+                ->format(),
+                Codes::HTTP_OK
+            );
+
+            $serializationContext = SerializationContext::create()
+                ->setGroups(array(
+                    AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION
+                ))
+            ;
+            $view->setSerializationContext($serializationContext);
+
+            return $this->handleView($view);
+
+        } catch(NotFoundHttpException $e) {
+            return $this->handleView($this->view(
+                array(),
+                $e->getStatusCode()
+            ));
+        }
+    }
+```
+
+Two contexts of serialization are available :
 * HypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION
 * HypermediaFormatter::SERIALIZER_CONTEXT_GROUP_SINGLE
 
 Theses contexts are useful to define which fields of an object will be
 serialized in the choosen context (single/collection).
+
 You can define them in serializer folder:
 
 ```yml
