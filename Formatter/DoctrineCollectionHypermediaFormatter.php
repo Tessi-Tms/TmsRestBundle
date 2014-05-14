@@ -299,8 +299,10 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                     true
                 )
             ),
-            'next'      => $this->generateNextLink(),
-            'previous'  => $this->generatePreviousLink()
+            'next'      => $this->generateNextPageLink(),
+            'previous'  => $this->generatePreviousPageLink(),
+            'first'     => $this->generatePageLink(1),
+            'last'      => $this->generatePageLink($this->computeTotalPage())
         );
     }
 
@@ -357,13 +359,39 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
-     * Generate next link to navigate in hypermedia collection
+     * Generate previous page link to navigate in hypermedia collection
      *
      * @return string
      */
-    public function generateNextLink()
+    public function generatePreviousPageLink() {
+        if ($this->page - 1 < 1) {
+            return '';
+        }
+
+        return $this->router->generate(
+            $this->currentRouteName,
+            array_merge(
+                array(
+                    '_format'   => $this->format,
+                    'page'      => $this->page-1,
+                    'sort'      => $this->sort,
+                    'limit'     => $this->limit,
+                    'offset'    => $this->offset
+                ),
+                $this->cleanCriteriaForLinks()
+            ),
+            true
+        );
+    }
+
+    /**
+     * Generate next page link to navigate in hypermedia collection
+     *
+     * @return string
+     */
+    public function generateNextPageLink()
     {
-        if ($this->page + 1 > ceil($this->totalCount / $this->limit)) {
+        if ($this->page + 1 > $this->computeTotalPage()) {
             return '';
         }
 
@@ -384,21 +412,18 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
-     * Generate previous link to navigate in hypermedia collection
+     * Generate page link to navigate in hypermedia collection
      *
      * @return string
      */
-    public function generatePreviousLink() {
-        if ($this->page - 1 < 1) {
-            return '';
-        }
-
+    public function generatePageLink($page)
+    {
         return $this->router->generate(
             $this->currentRouteName,
             array_merge(
                 array(
                     '_format'   => $this->format,
-                    'page'      => $this->page-1,
+                    'page'      => $page,
                     'sort'      => $this->sort,
                     'limit'     => $this->limit,
                     'offset'    => $this->offset
@@ -427,6 +452,16 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
         }
 
         return 0;
+    }
+
+    /**
+     * Compute the total page in a collection
+     *
+     * @return integer
+     */
+    public function computeTotalPage()
+    {
+        return ceil($this->totalCount / $this->limit);
     }
 
     /**
