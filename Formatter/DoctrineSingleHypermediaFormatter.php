@@ -146,7 +146,7 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
                     $embeddedSingleRoute
                 ),
                 'links' => array(
-                    'href' => $this->generateSelfLink(
+                    'self' => $this->generateSelfLink(
                         $embeddedCollectionRoute,
                         $this->object
                     )
