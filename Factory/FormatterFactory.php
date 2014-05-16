@@ -11,7 +11,7 @@
 namespace Tms\Bundle\RestBundle\Factory;
 
 use Tms\Bundle\RestBundle\Formatter\DoctrineCollectionHypermediaFormatter;
-use Tms\Bundle\RestBundle\Formatter\DoctrineSingleHypermediaFormatter;
+use Tms\Bundle\RestBundle\Formatter\DoctrineItemHypermediaFormatter;
 use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Symfony\Component\Routing\Router;
 use JMS\Serializer\Serializer;
@@ -40,7 +40,7 @@ class FormatterFactory
      * @param string $currentRouteName
      * @param string $format
      * 
-     * @return CollectionHypermediaFormatter
+     * @return DoctrineCollectionHypermediaFormatter
      */
     public function buildDoctrineCollectionHypermediaFormatter($currentRouteName, $format)
     {
@@ -54,17 +54,17 @@ class FormatterFactory
     }
 
     /**
-     * Instantiate a DoctrineSingleHypermediaFormatter
+     * Instantiate a DoctrineItemHypermediaFormatter
      *
      * @param string $currentRouteName
      * @param string $format
      * @param mixed  $objectPKValue
      * 
-     * @return SingleHypermediaFormatter
+     * @return DoctrineItemHypermediaFormatter
      */
-    public function buildDoctrineSingleHypermediaFormatter($currentRouteName, $format, $objectPKValue)
+    public function buildDoctrineItemHypermediaFormatter($currentRouteName, $format, $objectPKValue)
     {
-        return new DoctrineSingleHypermediaFormatter(
+        return new DoctrineItemHypermediaFormatter(
             $this->router,
             $this->criteriaBuilder,
             $this->serializer,

@@ -17,8 +17,8 @@ use JMS\Serializer\Serializer;
 
 abstract class AbstractHypermediaFormatter
 {
-    const SERIALIZER_CONTEXT_GROUP_SINGLE = 'details';
-    const SERIALIZER_CONTEXT_GROUP_COLLECTION = 'list';
+    const SERIALIZER_CONTEXT_GROUP_ITEM = 'tms_rest.item';
+    const SERIALIZER_CONTEXT_GROUP_COLLECTION = 'tms_rest.collection';
 
     // Services
     protected $serializer;

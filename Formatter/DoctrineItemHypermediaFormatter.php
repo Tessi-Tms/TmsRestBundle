@@ -14,8 +14,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Symfony\Component\Routing\Router;
 use JMS\Serializer\Serializer;
+use JMS\Serializer\SerializationContext;
 
-class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
+class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
     protected $objectPKValue = null;
     protected $object = null;
@@ -248,7 +249,13 @@ class DoctrineSingleHypermediaFormatter extends AbstractDoctrineHypermediaFormat
 
         foreach($this->getEmbeddedData($embeddedName) as $object) {
             $formattedEmbeddedData[] = array(
-                'data' => $object,
+                'data' => $this->serializer->serialize(
+                    $object,
+                    $this->format,
+                    SerializationContext::create()->setGroups(array(
+                        AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION
+                    ))
+                ),
                 'links' => array(
                     'self' => array(
                         'href' => $this->generateSelfLink(
