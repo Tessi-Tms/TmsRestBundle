@@ -77,6 +77,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                 'data'  => $object,
                 'links' => array(
                     'self' => array(
+                        'rel'  => 'self',
                         'href' => $this->generateItemLink($object)
                     )
                 )
@@ -91,7 +92,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return Collection<Object>
      */
-    public function getObjectsFromRepository()
+    public function getObjectsFromRepository($namespace = null)
     {
         // Set default values if some parameters are missing
         $this->cleanAndSetQueryParams(array(
@@ -103,11 +104,11 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
         ));
 
         // Count objects according to a given criteria
-        $this->totalCount = $this->countObjects($this->criteria);
+        $this->totalCount = $this->countObjects($namespace);
 
         // Retrieve objects according to a given criteria
         $this->objects = $this
-            ->findByQueryBuilder()
+            ->findByQueryBuilder($namespace)
             ->getQuery()
             ->execute();
 
@@ -119,11 +120,12 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return Doctrine\ORM\QueryBuilder
      */
-    public function findByQueryBuilder()
+    public function findByQueryBuilder($namespace = null)
     {
+        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
         $qb = $this
             ->objectManager
-            ->getRepository($this->objectNamespace)
+            ->getRepository($namespace)
             ->createQueryBuilder('object')
         ;
 
@@ -284,6 +286,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     {
         return array(
             'self' => array(
+                'rel'  => 'self',
                 'href' => $this->router->generate(
                     $this->currentRouteName,
                     array_merge(
@@ -299,10 +302,22 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                     true
                 )
             ),
-            'next'      => $this->generateNextPageLink(),
-            'previous'  => $this->generatePreviousPageLink(),
-            'first'     => $this->generatePageLink(1),
-            'last'      => $this->generatePageLink($this->computeTotalPage())
+            'next'      => array(
+                'rel'  => 'nav',
+                'href' => $this->generateNextPageLink()
+            ),
+            'previous'  => array(
+                'rel'  => 'nav',
+                'href' => $this->generatePreviousPageLink()
+            ),
+            'first'     => array(
+                'rel'  => 'nav',
+                'href' => $this->generatePageLink(1)
+            ),
+            'last'      => array(
+                'rel'  => 'nav',
+                'href' => $this->generatePageLink($this->computeTotalPage())
+            ),
         );
     }
 
@@ -494,8 +509,10 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    public function prepareQueryBuilderCount()
+    public function prepareQueryBuilderCount($namespace = null)
     {
+        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
+
         $qb = $this
             ->objectManager
             ->getRepository($this->objectNamespace)
@@ -512,9 +529,11 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return \Doctrine\ORM\Query | Doctrine\ODM\MongoDB\Query\Query
      */
-    public function prepareQueryCount()
+    public function prepareQueryCount($namespace = null)
     {
-        return $this->prepareQueryBuilderCount()->getQuery();
+        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
+
+        return $this->prepareQueryBuilderCount($namespace)->getQuery();
     }
 
     /**
@@ -522,10 +541,12 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return integer
      */
-    public function countObjects()
+    public function countObjects($namespace)
     {
+        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
+
         try {
-            return intval($this->prepareQueryCount()->getSingleScalarResult());
+            return intval($this->prepareQueryCount($namespace)->getSingleScalarResult());
         } catch(\Exception $e) {
             return 0;
         }

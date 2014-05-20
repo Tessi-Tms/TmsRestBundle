@@ -20,7 +20,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
 {
     protected $objectPKValue = null;
     protected $object = null;
-    protected $embeddedObjects = null;
+    protected $embeddeds = null;
 
     /**
      * Constructor
@@ -40,10 +40,10 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         $this->getObjectFromRepository();
 
         return array(
-            'metadata' => $this->formatMetadata(),
-            'data'     => $this->formatData(),
-            'links'    => $this->formatLinks(),
-            'embedded' => $this->formatEmbedded()
+            'metadata'  => $this->formatMetadata(),
+            'data'      => $this->formatData(),
+            'links'     => $this->formatLinks(),
+            'embeddeds' => $this->formatEmbeddeds()
         );
     }
 
@@ -77,11 +77,13 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     public function formatLinks()
     {
         return array(
-            'self' => $this->generateSelfLink(
-                $this->currentRouteName,
-                $this->object
-            ),
-        );
+            'self' => array(
+                'rel' => 'self',
+                'href' => $this->generateSelfLink(
+                    $this->currentRouteName,
+                    $this->object
+                )
+        ));
     }
 
     /**
@@ -95,9 +97,9 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      *
      * @return array
      */
-    public function formatEmbedded()
+    public function formatEmbeddeds()
     {
-        return $this->embeddedObjects;
+        return $this->embeddeds;
     }
 
     /**
@@ -138,19 +140,11 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         $this->getObjectFromRepository();
 
         if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
-            $this->embeddedObjects[$embeddedName] = array(
-                'metadata' => array(
-                    'type' => $this->getEmbeddedNamespace($embeddedName)
-                ),
-                'data'  => $this->formatEmbeddedData(
-                    $embeddedName,
-                    $embeddedSingleRoute
-                ),
-                'links' => array(
-                    'self' => $this->generateSelfLink(
-                        $embeddedCollectionRoute,
-                        $this->object
-                    )
+            $this->embeddeds[$embeddedName] = array(
+                'rel'   => 'embedded',
+                'href'  => $this->generateSelfLink(
+                    $embeddedCollectionRoute,
+                    $this->object
                 )
             );
         }
@@ -223,53 +217,5 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         return $this
             ->getClassMetadata()
             ->associationMappings[$embeddedName]['targetEntity'];
-    }
-
-    /**
-     * Format embedded data of 2nd depth into a given layout for hypermedia
-     * array(
-     *      'data'     => X,
-     *      'metadata' => X
-     *      'links'    => X,
-     *      'embedded' => array(
-     *          'data'     => $this->formatEmbeddedData($embeddedName, $embeddedSingleRoute),
-     *          'metadata' => X
-     *          'links'    => X,
-     *      )
-     * )
-     * 
-     * @param string $embeddedName
-     * @param string $embeddedSingleRoute
-     * 
-     * @return array formatted embedded data
-     */
-    public function formatEmbeddedData($embeddedName, $embeddedSingleRoute)
-    {
-        $formattedEmbeddedData = array();
-
-        foreach($this->getEmbeddedData($embeddedName) as $object) {
-            $formattedEmbeddedData[] = array(
-                'data' => $this->serializer->serialize(
-                    $object,
-                    $this->format,
-                    SerializationContext::create()->setGroups(array(
-                        AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION
-                    ))
-                ),
-                'links' => array(
-                    'self' => array(
-                        'href' => $this->generateSelfLink(
-                            $embeddedSingleRoute,
-                            $object
-                        )
-                    )
-                ),
-                'metadata' => array(
-                    'type' => $this->getEmbeddedNamespace($embeddedName)
-                ),
-            );
-        }
-
-        return $formattedEmbeddedData;
     }
 }
