@@ -42,8 +42,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         return array(
             'metadata'  => $this->formatMetadata(),
             'data'      => $this->formatData(),
-            'links'     => $this->formatLinks(),
-            'embeddeds' => $this->formatEmbeddeds()
+            'links'     => $this->formatLinks()
         );
     }
 
@@ -83,7 +82,9 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
                     $this->currentRouteName,
                     $this->object
                 )
-        ));
+            ),
+            'embeddeds' => $this->formatEmbeddeds()
+        );
     }
 
     /**
