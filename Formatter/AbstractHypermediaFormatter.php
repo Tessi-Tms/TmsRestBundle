@@ -10,7 +10,6 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-use Doctrine\Common\Persistence\ObjectManager;
 use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Symfony\Component\Routing\Router;
 use JMS\Serializer\Serializer;
@@ -19,6 +18,7 @@ abstract class AbstractHypermediaFormatter
 {
     const SERIALIZER_CONTEXT_GROUP_ITEM = 'tms_rest.item';
     const SERIALIZER_CONTEXT_GROUP_COLLECTION = 'tms_rest.collection';
+    const SERIALIZER_CONTEXT_GROUP_NAME = 'serializerContextGroup';
 
     // Services
     protected $serializer;
@@ -55,8 +55,9 @@ abstract class AbstractHypermediaFormatter
     public function formatMetadata()
     {
         return array(
-            'type'                   => $this->getType(),
-            'serializerContextGroup' => $this->getSerializerContextGroup()
+            'type' => $this->getType(),
+            AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_NAME =>
+                $this->getSerializerContextGroup()
         );
     }
 
