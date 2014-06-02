@@ -48,13 +48,13 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     public function formatMetadata()
     {
         return array_merge(
+            parent::formatMetadata(),
             array(
-                'type'          => $this->getType(),
-                'page'          => $this->page,
-                'pageCount'     => $this->computePageCount(),
-                'totalCount'    => $this->totalCount,
-                'limit'         => $this->limit,
-                'offset'        => $this->offset
+                'page'                   => $this->page,
+                'pageCount'              => $this->computePageCount(),
+                'totalCount'             => $this->totalCount,
+                'limit'                  => $this->limit,
+                'offset'                 => $this->offset
             ),
             $this->cleanCriteriaForLinks()
         );
@@ -302,19 +302,19 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
                     true
                 )
             ),
-            'next'      => array(
+            'nextPage'      => array(
                 'rel'  => 'nav',
                 'href' => $this->generateNextPageLink()
             ),
-            'previous'  => array(
+            'previousPage'  => array(
                 'rel'  => 'nav',
                 'href' => $this->generatePreviousPageLink()
             ),
-            'first'     => array(
+            'firstPage'     => array(
                 'rel'  => 'nav',
                 'href' => $this->generatePageLink(1)
             ),
-            'last'      => array(
+            'lastPage'      => array(
                 'rel'  => 'nav',
                 'href' => $this->generatePageLink($this->computeTotalPage())
             ),
@@ -550,5 +550,13 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
         } catch(\Exception $e) {
             return 0;
         }
+    }
+
+    /**
+     * {@inheritdoc }
+     */
+    public function getSerializerContextGroup()
+    {
+        return AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION;
     }
 }

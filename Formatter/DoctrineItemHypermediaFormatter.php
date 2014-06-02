@@ -47,18 +47,6 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     }
 
     /**
-     * Format metadata into a given layout for hypermedia
-     *
-     * @return array
-     */
-    public function formatMetadata()
-    {
-        return array(
-            'type' => $this->getType(),
-        );
-    }
-
-    /**
      * Format data into a given layout for hypermedia
      *
      * @return array
@@ -218,5 +206,13 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         return $this
             ->getClassMetadata()
             ->associationMappings[$embeddedName]['targetEntity'];
+    }
+
+    /**
+     * {@inheritdoc }
+     */
+    public function getSerializerContextGroup()
+    {
+        return AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ITEM;
     }
 }
