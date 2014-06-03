@@ -24,20 +24,6 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
 
     protected $objects;
     protected $itemRoutes = null;
-    
-    /**
-     * {@inheritdoc }
-     */
-    public function format()
-    {
-        $this->getObjectsFromRepository();
-
-        return array(
-            'metadata' => $this->formatMetadata(),
-            'data'     => $this->formatData(),
-            'links'    => $this->formatLinks()
-        );
-    }
 
     /**
      * Format metadata into a given layout for hypermedia
@@ -500,7 +486,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     public function addItemRoute($itemNamespace, $itemRoute)
     {
         $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)] = $itemRoute;
-        
+
         return $this;
     }
 

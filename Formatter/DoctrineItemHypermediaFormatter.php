@@ -33,20 +33,6 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     }
 
     /**
-     * {@inheritdoc }
-     */
-    public function format()
-    {
-        $this->getObjectFromRepository();
-
-        return array(
-            'metadata'  => $this->formatMetadata(),
-            'data'      => $this->formatData(),
-            'links'     => $this->formatLinks()
-        );
-    }
-
-    /**
      * Format data into a given layout for hypermedia
      *
      * @return array
@@ -96,7 +82,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      *
      * @return Object
      */
-    public function getObjectFromRepository()
+    public function getObjectsFromRepository()
     {
         if(!$this->object) {
             $findOneByMethod = sprintf("findOneBy%s", ucfirst($this->getClassIdentifier()));
@@ -126,7 +112,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      */
     public function addEmbedded($embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
     {
-        $this->getObjectFromRepository();
+        $this->getObjectsFromRepository();
 
         if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
             $this->embeddeds[$embeddedName] = array(
@@ -178,34 +164,6 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
             $embeddedName,
             $this->getClassMetadata()->associationMappings
         );
-    }
-
-    /**
-     * Guess retrieve embedded data method
-     * Retrieve embedded objects for a given embedded name
-     * Example : $offer->getProducts()
-     * 
-     * @param string $embeddedName
-     * 
-     * @return Collection
-     */
-    public function getEmbeddedData($embeddedName)
-    {
-        $retrieveEmbeddedMethod = sprintf("get%s", ucfirst($embeddedName));
-
-        return $this->object->$retrieveEmbeddedMethod();
-    }
-
-    /**
-     * Give embedded object namespace
-     *
-     * @return string
-     */
-    public function getEmbeddedNamespace($embeddedName)
-    {
-        return $this
-            ->getClassMetadata()
-            ->associationMappings[$embeddedName]['targetEntity'];
     }
 
     /**

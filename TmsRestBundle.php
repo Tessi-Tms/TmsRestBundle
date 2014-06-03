@@ -14,10 +14,4 @@ use Tms\Bundle\RestBundle\DependencyInjection\Compiler\RestLinkCompilerPass;
 
 class TmsRestBundle extends Bundle
 {
-    public function build(ContainerBuilder $container)
-    {
-        parent::build($container);
-
-        $container->addCompilerPass(new RestLinkCompilerPass());
-    }
 }

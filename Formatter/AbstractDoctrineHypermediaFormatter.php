@@ -99,4 +99,16 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
     {
         return $this->getClassNamespace();
     }
+
+    /**
+     * {@inheritdoc }
+     */
+    public function format()
+    {
+        $this->getObjectsFromRepository();
+
+        return parent::format();
+    }
+
+    abstract public function getObjectsFromRepository();
 }

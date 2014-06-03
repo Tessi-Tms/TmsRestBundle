@@ -19,9 +19,3 @@ services:
     tms.rest.formatter.factory:
         class: %tms_rest.formatter.factory.class%
         arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
-
-    kernel.listener.link_request_listener:
-        class: %tms_rest.event_listener.link_request.class%
-        arguments: [@controller_resolver, @router]
-        tags:
-            - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest }

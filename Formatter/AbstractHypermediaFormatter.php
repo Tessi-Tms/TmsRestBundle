@@ -46,7 +46,21 @@ abstract class AbstractHypermediaFormatter
         // Initialize configuration by route
         $this->criteriaBuilder->guessConfigurationByRoute($currentRouteName);
     }
-    
+
+    /**
+     * Format raw data to have hypermedia data in output
+     *
+     * @return array
+     */
+    public function format()
+    {
+        return array(
+            'metadata' => $this->formatMetadata(),
+            'data'     => $this->formatData(),
+            'links'    => $this->formatLinks()
+        );
+    }
+
     /**
      * Format raw data to have hypermedia metadata in output
      *
@@ -60,14 +74,6 @@ abstract class AbstractHypermediaFormatter
                 $this->getSerializerContextGroup()
         );
     }
-
-    /**
-     * Format raw data to have hypermedia data in output
-     *
-     * @return array
-     */
-    abstract public function format();
-
 
     /**
      * Format raw data to have hypermedia data in output
