@@ -58,7 +58,9 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
         foreach($this->objects as $object) {
             $data[] = array(
                 'metadata' => array(
-                    'type' => $this->getType()
+                    'type' => $this->getType(),
+                    AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_NAME
+                    => AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ITEM
                 ),
                 'data'  => $object,
                 'links' => array(
