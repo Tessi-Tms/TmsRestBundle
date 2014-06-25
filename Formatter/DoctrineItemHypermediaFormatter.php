@@ -18,6 +18,7 @@ use JMS\Serializer\SerializationContext;
 
 class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
+    protected $objectPK = 'id';
     protected $objectPKValue = null;
     protected $object = null;
     protected $embeddeds = null;
@@ -25,9 +26,10 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     /**
      * Constructor
      */
-    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectPKValue)
+    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectPKValue, $objectPK = 'id')
     {
         $this->objectPKValue = $objectPKValue;
+        $this->objectPK = $objectPK;
 
         parent::__construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format);
     }
@@ -85,7 +87,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     public function getObjectsFromRepository()
     {
         if(!$this->object) {
-            $findOneByMethod = sprintf("findOneBy%s", ucfirst($this->getClassIdentifier()));
+            $findOneByMethod = sprintf("findOneBy%s", ucfirst($this->objectPK));
             $object = $this->objectManager
                 ->getRepository($this->objectNamespace)
                 ->$findOneByMethod($this->objectPKValue);

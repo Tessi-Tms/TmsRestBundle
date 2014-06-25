@@ -59,10 +59,11 @@ class FormatterFactory
      * @param string $currentRouteName
      * @param string $format
      * @param mixed  $objectPKValue
+     * @param mixed  $objectPK
      * 
      * @return DoctrineItemHypermediaFormatter
      */
-    public function buildDoctrineItemHypermediaFormatter($currentRouteName, $format, $objectPKValue)
+    public function buildDoctrineItemHypermediaFormatter($currentRouteName, $format, $objectPKValue, $objectPK = 'id')
     {
         return new DoctrineItemHypermediaFormatter(
             $this->router,
@@ -70,8 +71,8 @@ class FormatterFactory
             $this->serializer,
             $currentRouteName,
             $format,
-            $objectPKValue
+            $objectPKValue,
+            $objectPK
         );
     }
-    
 }
