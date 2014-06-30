@@ -16,6 +16,10 @@ services:
     tms_rest.entity_handler:
         class: %tms_rest.entity_handler.class%
 
-    tms.rest.formatter.factory:
+    tms.rest.formatter.factory: # TO DO: TO DELETE
+        class: %tms_rest.formatter.factory.class%
+        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+
+    tms_rest.formatter.factory:
         class: %tms_rest.formatter.factory.class%
         arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
