@@ -1,0 +1,18 @@
+services:
+    tms_rest.formatter_provider.item:
+        class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineItemHypermediaFormatterProvider
+        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        tags:
+            - { name: tms_rest.formatter_provider, id: item }
+
+    tms_rest.formatter_provider.orm_collection:
+        class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineOrmCollectionHypermediaFormatterProvider
+        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        tags:
+            - { name: tms_rest.formatter_provider, id: orm_collection }
+
+    tms_rest.formatter_provider.mongodb_collection:
+        class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineMongoDbCollectionHypermediaFormatterProvider
+        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        tags:
+            - { name: tms_rest.formatter_provider, id: mongodb_collection }
