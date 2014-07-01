@@ -1,9 +1,9 @@
 parameters:
-    tms_rest.criteria_builder.class:                Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
-    tms_rest.sort_builder.class:                    Tms\Bundle\RestBundle\Sort\SortBuilder
-    tms_rest.entity_handler.class:                  Tms\Bundle\RestBundle\EntityHandler\EntityHandler
-    tms_rest.event_listener.link_request.class:     Tms\Bundle\RestBundle\EventListener\LinkRequestListener
-    tms_rest.formatter.factory.class:              Tms\Bundle\RestBundle\Factory\FormatterFactory
+    tms_rest.criteria_builder.class:            Tms\Bundle\RestBundle\Criteria\CriteriaBuilder
+    tms_rest.sort_builder.class:                Tms\Bundle\RestBundle\Sort\SortBuilder
+    tms_rest.entity_handler.class:              Tms\Bundle\RestBundle\EntityHandler\EntityHandler
+    tms_rest.event_listener.link_request.class: Tms\Bundle\RestBundle\EventListener\LinkRequestListener
+    tms_rest.formatter.factory.class:           Tms\Bundle\RestBundle\Factory\FormatterFactory
 
 services:
     tms_rest.criteria_builder:
