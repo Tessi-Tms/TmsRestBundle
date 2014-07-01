@@ -7,7 +7,7 @@ namespace Tms\Bundle\RestBundle\Formatter\Provider;
  *
  * @author Thomas Prelot <thomas.prelot@tessi.fr>
  */
-class AbstractFormatterProvider implements FormatterProviderInterface
+abstract class AbstractFormatterProvider implements FormatterProviderInterface
 {
     /**
      * The ordonned arguments coming from the dependency injection.
@@ -27,7 +27,7 @@ class AbstractFormatterProvider implements FormatterProviderInterface
      */
     public function create($arguments = array())
     {
-        $class = new ReflectionClass($this->getFormatterClassName());
+        $class = new \ReflectionClass($this->getFormatterClassName());
 
         return $class->newInstanceArgs(array_merge($this->arguments, $arguments));
     }

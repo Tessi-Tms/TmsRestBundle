@@ -95,7 +95,7 @@ class FormatterFactory
      * @param string $id       The id of the formatter provider.
      * @param string $provider The provider.
      */
-    public function getFormatterProvider($id, $provider)
+    public function getFormatterProvider($id)
     {
         if (!isset($this->formatterProviders[$id])) {
             throw new \LogicException(sprintf(

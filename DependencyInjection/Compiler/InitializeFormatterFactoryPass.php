@@ -15,19 +15,20 @@ class InitializeFormatterFactoryPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container)
     {
-        if (!$container->hasDefinition('tms_rest.formatter.factory'))
+        if (!$container->hasDefinition('tms_rest.formatter.factory')) {
             return;
+        }
 
         $definition = $container->getDefinition('tms_rest.formatter.factory');
 
         // Injection of the aggregators.
-        $taggedServices = $container->findTaggedServiceIds('tms_rest.formatter_provider');
+        $taggedServices = $container->findTaggedServiceIds('tms_rest.formatter.provider');
 
         foreach ($taggedServices as $id => $tagAttributes) {
             foreach ($tagAttributes as $attributes) {
                 $definition->addMethodCall(
                     'addFormatterProvider',
-                    array(new Reference($id), $attributes['id'])
+                    array($attributes['id'], new Reference($id))
                 );
             }
         }

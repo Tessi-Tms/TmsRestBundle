@@ -13,7 +13,7 @@ class DoctrineOrmCollectionHypermediaFormatterProvider extends AbstractFormatter
     /**
      * {@inheritdoc }
      */
-    abstract protected function getFormatterClassName()
+    protected function getFormatterClassName()
     {
         return 'Tms\Bundle\RestBundle\Formatter\DoctrineOrmCollectionHypermediaFormatter';
     }
