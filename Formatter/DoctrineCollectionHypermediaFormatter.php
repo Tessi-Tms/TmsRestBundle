@@ -55,6 +55,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     public function formatData()
     {
         $data = array();
+
         foreach($this->objects as $object) {
             $data[] = array(
                 'metadata' => array(
@@ -118,10 +119,8 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
         ;
 
         $this->addSortToQueryBuilder($qb);
+        $this->addPaginationToQueryBuilder($qb);
         $this->addCriteriaToQueryBuilder($qb);
-
-        $qb->setFirstResult($this->computeOffsetWithPage());
-        $qb->setMaxResults($this->limit);
 
         return $qb;
     }
@@ -131,7 +130,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return Doctrine\ORM\QueryBuilder
      */
-    public function addSortToQueryBuilder(QueryBuilder $qb)
+    public function addSortToQueryBuilder(/*QueryBuilder*/ $qb)
     {
         foreach($this->sort as $field => $order) {
             $qb->addOrderBy(sprintf('object.%s', $field), $order);
@@ -141,11 +140,22 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
+     * Add query pagination to a Query Builder
+     *
+     * @return Doctrine\ORM\QueryBuilder
+     */
+    public function addPaginationToQueryBuilder(/*QueryBuilder*/ $qb)
+    {
+        $qb->setFirstResult($this->computeOffsetWithPage());
+        $qb->setMaxResults($this->limit);
+    }
+
+    /**
      * Add query criteria to a Query Builder
      *
      * @return Doctrine\ORM\QueryBuilder
      */
-    public function addCriteriaToQueryBuilder(QueryBuilder $qb)
+    public function addCriteriaToQueryBuilder(/*QueryBuilder*/ $qb)
     {
         if(!$this->criteria) {
             return $qb;

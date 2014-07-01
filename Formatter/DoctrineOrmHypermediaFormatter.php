@@ -2,7 +2,7 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-use Doctrine\ORM\QueryBuilder;
+//use Doctrine\ORM\QueryBuilder;
 
 /**
  * DoctrineOrmHypermediaFormatter is the doctrine orm collection formatter.
@@ -16,7 +16,7 @@ class DoctrineOrmHypermediaFormatter extends DoctrineCollectionHypermediaFormatt
      *
      * @return Doctrine\ORM\QueryBuilder
      */
-    public function addSortToQueryBuilder(QueryBuilder $qb)
+    public function addSortToQueryBuilder(/*QueryBuilder*/ $qb)
     {
         foreach($this->sort as $field => $order) {
             $qb->addOrderBy(sprintf('object.%s', $field), $order);
@@ -26,11 +26,22 @@ class DoctrineOrmHypermediaFormatter extends DoctrineCollectionHypermediaFormatt
     }
 
     /**
+     * Add query pagination to a Query Builder
+     *
+     * @return Doctrine\ORM\QueryBuilder
+     */
+    public function addPaginationToQueryBuilder(/*QueryBuilder*/ $qb)
+    {
+        $qb->setFirstResult($this->computeOffsetWithPage());
+        $qb->setMaxResults($this->limit);
+    }
+
+    /**
      * Add query criteria to a Query Builder
      *
      * @return Doctrine\ORM\QueryBuilder
      */
-    public function addCriteriaToQueryBuilder(QueryBuilder $qb)
+    public function addCriteriaToQueryBuilder(/*QueryBuilder*/ $qb)
     {
         if(!$this->criteria) {
             return $qb;
