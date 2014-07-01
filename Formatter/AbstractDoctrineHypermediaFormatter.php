@@ -85,9 +85,9 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
      */
     public function getClassIdentifier($namespace = null)
     {
-        $identifiers = $this->getClassMetadata($namespace)->getIdentifier();
+        $identifier = $this->getClassMetadata($namespace)->getIdentifier();
 
-        return $identifiers[0];
+        return $identifier;
     }
 
     /**
