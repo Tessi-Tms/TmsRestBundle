@@ -15,6 +15,7 @@ use Tms\Bundle\RestBundle\Formatter\DoctrineItemHypermediaFormatter;
 use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Symfony\Component\Routing\Router;
 use JMS\Serializer\Serializer;
+use Tms\Bundle\RestBundle\Formatter\Provider\FormatterProviderInterface;
 
 class FormatterFactory
 {
@@ -81,10 +82,10 @@ class FormatterFactory
     /**
      * Add a formatter provider.
      *
-     * @param string $id                The id of the formatter provider.
-     * @param string $formatterProvider The formatter provider.
+     * @param string                     $id                The id of the formatter provider.
+     * @param FormatterProviderInterface $formatterProvider The formatter provider.
      */
-    public function addFormatterProvider($id, $formatterProvider)
+    public function addFormatterProvider($id, FormatterProviderInterface $formatterProvider)
     {
         $this->formatterProviders[$id] = $formatterProvider;
     }
@@ -92,8 +93,9 @@ class FormatterFactory
     /**
      * Add a formatter provider.
      *
-     * @param string $id       The id of the formatter provider.
-     * @param string $provider The provider.
+     * @param string $id The id of the formatter provider.
+     *
+     * @return FormatterProviderInterface The provider.
      */
     public function getFormatterProvider($id)
     {
