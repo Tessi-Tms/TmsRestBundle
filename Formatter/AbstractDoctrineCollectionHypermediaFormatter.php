@@ -10,9 +10,7 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-use Doctrine\ORM\QueryBuilder;
-
-class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
+abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
     // Query params
     protected $criteria = null;
@@ -28,10 +26,9 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     /**
      * Format metadata into a given layout for hypermedia
      *
-     * @param int|null $totalCount
      * @return array
      */
-    public function formatMetadata()
+    protected function formatMetadata()
     {
         return array_merge(
             parent::formatMetadata(),
@@ -49,10 +46,9 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     /**
      * Format data into a given layout for hypermedia
      *
-     * @param array $objects
      * @return array
      */
-    public function formatData()
+    protected function formatData()
     {
         $data = array();
 
@@ -81,7 +77,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return Collection<Object>
      */
-    public function getObjectsFromRepository($namespace = null)
+    protected function getObjectsFromRepository($namespace = null)
     {
         // Set default values if some parameters are missing
         $this->cleanAndSetQueryParams(array(
@@ -109,7 +105,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return Doctrine\ORM\QueryBuilder
      */
-    public function findByQueryBuilder($namespace = null)
+    protected function findByQueryBuilder($namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
         $qb = $this
@@ -126,143 +122,11 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
-     * Add query sort to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
-     */
-    public function addSortToQueryBuilder(/*QueryBuilder*/ $qb)
-    {
-        foreach($this->sort as $field => $order) {
-            $qb->addOrderBy(sprintf('object.%s', $field), $order);
-        }
-
-        return $qb;
-    }
-
-    /**
-     * Add query pagination to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
-     */
-    public function addPaginationToQueryBuilder(/*QueryBuilder*/ $qb)
-    {
-        $qb->setFirstResult($this->computeOffsetWithPage());
-        $qb->setMaxResults($this->limit);
-    }
-
-    /**
-     * Add query criteria to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
-     */
-    public function addCriteriaToQueryBuilder(/*QueryBuilder*/ $qb)
-    {
-        if(!$this->criteria) {
-            return $qb;
-        }
-
-        foreach($this->criteria as $column => $value) {
-            if(is_array($value)) {
-                foreach($value as $k => $v) {
-                    $qb->join(sprintf('object.%s', $column), $column);
-                    $qb->andWhere(sprintf('%s.%s = :%s', $column, $k, $column));
-                    $qb->setParameter($column, $v);
-                }
-            } else {
-                $qb->andWhere(sprintf('object.%s = :%s', $column, $column));
-                $qb->setParameter($column, $value);
-            }
-        }
-
-        return $qb;
-    }
-
-    /**
-     * Set the criteria
-     *
-     * @param array $criteria
-     * @return $this
-     */
-    public function setCriteria($criteria = null)
-    {
-        $this->criteria = $this
-            ->criteriaBuilder
-            ->cleanCriteriaValue($criteria)
-        ;
-
-        return $this;
-    }
-    
-    /**
-     * Set the limit
-     *
-     * @param integer $limit
-     * @return $this
-     */
-    public function setLimit($limit = null)
-    {
-        $this->limit = $this
-            ->criteriaBuilder
-            ->defineLimitValue($limit)
-        ;
-        
-        return $this;
-    }
-    
-    /**
-     * Set the sort
-     *
-     * @param array $sort
-     * @return $this
-     */
-    public function setSort($sort = null)
-    {
-        $this->sort = $this
-            ->criteriaBuilder
-            ->defineSortValue($sort)
-        ;
-        
-        return $this;
-    }
-    
-    /**
-     * Set the page
-     *
-     * @param integer $page
-     * @return $this
-     */
-    public function setPage($page = null)
-    {
-        $this->page = $this
-            ->criteriaBuilder
-            ->definePageValue($page)
-        ;
-        
-        return $this;
-    }
-
-    /**
-     * Set the offset
-     *
-     * @param integer $offset
-     * @return $this
-     */
-    public function setOffset($offset = null)
-    {
-        $this->offset = $this
-            ->criteriaBuilder
-            ->defineOffsetValue($offset)
-        ;
-        
-        return $this;
-    }
-
-    /**
      * Define all params with configuration if some are not given
      *
      * @param array $parameters
      */
-    public function cleanAndSetQueryParams(array $params)
+    protected function cleanAndSetQueryParams(array $params)
     {
         foreach($params as $name => $value) {
             if(is_null($value)) {
@@ -280,7 +144,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return array
      */
-    public function formatLinks()
+    protected function formatLinks()
     {
         return array(
             'self' => array(
@@ -314,7 +178,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
             ),
             'lastPage'      => array(
                 'rel'  => 'nav',
-                'href' => $this->generatePageLink($this->computeTotalPage())
+                'href' => $this->generateLastPageLink()
             ),
         );
     }
@@ -324,7 +188,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return array
      */
-    public function cleanCriteriaForLinks()
+    protected function cleanCriteriaForLinks()
     {
         $cleanedCriteria = array();
         foreach($this->criteria as $column => $value) {
@@ -339,14 +203,14 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
 
         return $cleanedCriteria;
     }
-    
+
     /**
      * Generate an item link
      *
      * @param mixed $object
      * @return url
      */
-    public function generateItemLink($object)
+    protected function generateItemLink($object)
     {
         $itemNamespace = $this->getClassNamespace(get_class($object));
         $getKeyMethod = sprintf("get%s", ucfirst($this
@@ -376,25 +240,27 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return string
      */
-    public function generatePreviousPageLink() {
+    protected function generatePreviousPageLink()
+    {
         if ($this->page - 1 < 1) {
             return '';
         }
 
-        return $this->router->generate(
-            $this->currentRouteName,
-            array_merge(
-                array(
-                    '_format'   => $this->format,
-                    'page'      => $this->page-1,
-                    'sort'      => $this->sort,
-                    'limit'     => $this->limit,
-                    'offset'    => $this->offset
-                ),
-                $this->cleanCriteriaForLinks()
-            ),
-            true
-        );
+        return $this->generatePageLink($this->page-1);
+    }
+
+    /**
+     * Generate previous page link to navigate in hypermedia collection
+     *
+     * @return string
+     */
+    protected function generateLastPageLink()
+    {
+        if ($this->totalCount === 0) {
+            return $this->generatePageLink(1);
+        }
+
+        return $this->generatePageLink($this->computeTotalPage());
     }
 
     /**
@@ -402,26 +268,13 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return string
      */
-    public function generateNextPageLink()
+    protected function generateNextPageLink()
     {
         if ($this->page + 1 > $this->computeTotalPage()) {
             return '';
         }
 
-        return $this->router->generate(
-            $this->currentRouteName,
-            array_merge(
-                array(
-                    '_format'   => $this->format,
-                    'page'      => $this->page+1,
-                    'sort'      => $this->sort,
-                    'limit'     => $this->limit,
-                    'offset'    => $this->offset
-                ),
-                $this->cleanCriteriaForLinks()
-            ),
-            true
-        );
+        return $this->generatePageLink($this->page+1);
     }
 
     /**
@@ -429,7 +282,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return string
      */
-    public function generatePageLink($page)
+    protected function generatePageLink($page)
     {
         return $this->router->generate(
             $this->currentRouteName,
@@ -452,7 +305,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return integer
      */
-    public function computePageCount()
+    protected function computePageCount()
     {
         if($this->computeOffsetWithPage() > $this->totalCount) {
             return 0;
@@ -472,7 +325,7 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return integer
      */
-    public function computeTotalPage()
+    protected function computeTotalPage()
     {
         return ceil($this->totalCount / $this->limit);
     }
@@ -482,9 +335,17 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
      *
      * @return integer
      */
-    public function computeOffsetWithPage()
+    protected function computeOffsetWithPage()
     {
         return $this->offset+($this->page-1)*$this->limit;
+    }
+
+    /**
+     * {@inheritdoc }
+     */
+    protected function getSerializerContextGroup()
+    {
+        return AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION;
     }
 
     /**
@@ -503,23 +364,83 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     }
 
     /**
-     * Prepare a query builder to count objects
+     * Set the criteria
      *
-     * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     * @param array $criteria
+     * @return $this
      */
-    public function prepareQueryBuilderCount($namespace = null)
+    public function setCriteria($criteria = null)
     {
-        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
+        $this->criteria = $this
+            ->criteriaBuilder
+            ->cleanCriteriaValue($criteria)
+        ;
 
-        $qb = $this
-            ->objectManager
-            ->getRepository($this->objectNamespace)
-            ->createQueryBuilder('object')
-            ->select('COUNT(object.id)');
+        return $this;
+    }
 
-        $this->addCriteriaToQueryBuilder($qb);
+    /**
+     * Set the limit
+     *
+     * @param integer $limit
+     * @return $this
+     */
+    public function setLimit($limit = null)
+    {
+        $this->limit = $this
+            ->criteriaBuilder
+            ->defineLimitValue($limit)
+        ;
+        
+        return $this;
+    }
 
-        return $qb;
+    /**
+     * Set the sort
+     *
+     * @param array $sort
+     * @return $this
+     */
+    public function setSort($sort = null)
+    {
+        $this->sort = $this
+            ->criteriaBuilder
+            ->defineSortValue($sort)
+        ;
+        
+        return $this;
+    }
+
+    /**
+     * Set the page
+     *
+     * @param integer $page
+     * @return $this
+     */
+    public function setPage($page = null)
+    {
+        $this->page = $this
+            ->criteriaBuilder
+            ->definePageValue($page)
+        ;
+        
+        return $this;
+    }
+
+    /**
+     * Set the offset
+     *
+     * @param integer $offset
+     * @return $this
+     */
+    public function setOffset($offset = null)
+    {
+        $this->offset = $this
+            ->criteriaBuilder
+            ->defineOffsetValue($offset)
+        ;
+        
+        return $this;
     }
 
     /**
@@ -531,30 +452,44 @@ class DoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFo
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
-        return $this->prepareQueryBuilderCount($namespace)->getQuery();
+        return $this->prepareCountQueryBuilder($namespace)->getQuery();
     }
+
+    /**
+     * Add query sort to a Query Builder
+     *
+     * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     */
+    abstract protected function addSortToQueryBuilder($qb);
+
+    /**
+     * Add query pagination to a Query Builder
+     *
+     * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     */
+    abstract protected function addPaginationToQueryBuilder($qb);
+
+    /**
+     * Add query criteria to a Query Builder
+     *
+     * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     */
+    abstract protected function addCriteriaToQueryBuilder($qb);
+
+    /**
+     * Prepare a query builder to count objects
+     *
+     * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     */
+    abstract protected function prepareCountQueryBuilder($namespace = null);
 
     /**
      * Count objects
      *
      * @return integer
      */
-    public function countObjects($namespace)
-    {
-        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-
-        try {
-            return intval($this->prepareQueryCount($namespace)->getSingleScalarResult());
-        } catch(\Exception $e) {
-            return 0;
-        }
-    }
-
-    /**
-     * {@inheritdoc }
-     */
-    public function getSerializerContextGroup()
-    {
-        return AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION;
-    }
+    abstract protected function countObjects($namespace = null);
 }

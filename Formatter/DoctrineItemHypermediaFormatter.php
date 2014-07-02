@@ -49,12 +49,12 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      *
      * @return array
      */
-    public function formatLinks()
+    protected function formatLinks()
     {
         return array(
             'self' => array(
                 'rel' => 'self',
-                'href' => $this->generateSelfLink(
+                'href' => $this->generateLink(
                     $this->currentRouteName,
                     $this->object
                 )
@@ -74,7 +74,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      *
      * @return array
      */
-    public function formatEmbeddeds()
+    protected function formatEmbeddeds()
     {
         return $this->embeddeds;
     }
@@ -84,7 +84,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      *
      * @return Object
      */
-    public function getObjectsFromRepository()
+    protected function getObjectsFromRepository()
     {
         if(!$this->object) {
             $findOneByMethod = sprintf("findOneBy%s", ucfirst($this->objectPK));
@@ -103,41 +103,14 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     }
 
     /**
-     * Add an embedded element to a single hypermedia object
-     * You can chain this method easily
-     *
-     * @param string $embeddedName
-     * @param string $embeddedSingleRoute
-     * @param string $embeddedCollectionRoute
-     * 
-     * @return $this
-     */
-    public function addEmbedded($embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
-    {
-        $this->getObjectsFromRepository();
-
-        if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
-            $this->embeddeds[$embeddedName] = array(
-                'rel'   => 'embedded',
-                'href'  => $this->generateSelfLink(
-                    $embeddedCollectionRoute,
-                    $this->object
-                )
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Generate the self link for a single object
+     * Generate a link for a single object
      * 
      * @param string $routeName
      * @param Object $object
      * 
      * @return Collection
      */
-    public function generateSelfLink($routeName, $object)
+    protected function generateLink($routeName, $object)
     {
         $classIdentifier = $this->getClassIdentifier(get_class($object));
         $getMethod = sprintf("get%s", ucfirst($classIdentifier));
@@ -160,7 +133,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      * 
      * @return boolean
      */
-    public function isEmbeddedMappedBySingleEntity($embeddedName)
+    protected function isEmbeddedMappedBySingleEntity($embeddedName)
     {
         return array_key_exists(
             $embeddedName,
@@ -171,8 +144,35 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     /**
      * {@inheritdoc }
      */
-    public function getSerializerContextGroup()
+    protected function getSerializerContextGroup()
     {
         return AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ITEM;
+    }
+
+    /**
+     * Add an embedded element to a single hypermedia object
+     * You can chain this method easily
+     *
+     * @param string $embeddedName
+     * @param string $embeddedSingleRoute
+     * @param string $embeddedCollectionRoute
+     * 
+     * @return $this
+     */
+    public function addEmbedded($embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
+    {
+        $this->getObjectsFromRepository();
+
+        if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
+            $this->embeddeds[$embeddedName] = array(
+                'rel'   => 'embedded',
+                'href'  => $this->generateLink(
+                    $embeddedCollectionRoute,
+                    $this->object
+                )
+            );
+        }
+
+        return $this;
     }
 }

@@ -9,14 +9,12 @@ namespace Tms\Bundle\RestBundle\Formatter;
  *
  * @author Thomas Prelot <thomas.prelot@tessi.fr>
  */
-class DoctrineMongoDbHypermediaFormatter extends DoctrineCollectionHypermediaFormatter
+class DoctrineMongoDbCollectionHypermediaFormatter extends AbstractDoctrineCollectionHypermediaFormatter
 {
     /**
-     * Add query sort to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
+     * {@inheritdoc }
      */
-    public function addSortToQueryBuilder(/*QueryBuilder*/ $qb)
+    protected function addSortToQueryBuilder($qb)
     {
         $qb->sort($this->sort);
 
@@ -24,22 +22,18 @@ class DoctrineMongoDbHypermediaFormatter extends DoctrineCollectionHypermediaFor
     }
 
     /**
-     * Add query pagination to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
+     * {@inheritdoc }
      */
-    public function addPaginationToQueryBuilder(/*QueryBuilder*/ $qb)
+    protected function addPaginationToQueryBuilder($qb)
     {
         $qb->skip($this->computeOffsetWithPage());
         $qb->limit($this->limit);
     }
 
     /**
-     * Add query criteria to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
+     * {@inheritdoc }
      */
-    public function addCriteriaToQueryBuilder(/*QueryBuilder*/ $qb)
+    protected function addCriteriaToQueryBuilder($qb)
     {
         if (!$this->criteria) {
             return $qb;
@@ -61,11 +55,9 @@ class DoctrineMongoDbHypermediaFormatter extends DoctrineCollectionHypermediaFor
     }
 
     /**
-     * Prepare a query builder to count objects
-     *
-     * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     * {@inheritdoc }
      */
-    public function prepareQueryBuilderCount($namespace = null)
+    protected function prepareCountQueryBuilder($namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
@@ -81,18 +73,13 @@ class DoctrineMongoDbHypermediaFormatter extends DoctrineCollectionHypermediaFor
     }
 
     /**
-     * Count objects
-     *
-     * @return integer
+     * {@inheritdoc }
      */
-    public function countObjects($namespace)
+    protected function countObjects($namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
-        //try {
-            return intval($this->prepareQueryCount($namespace)->count());
-        /*} catch(\Exception $e) {
-            return 0;
-        }*/
+        // TO DEFINE
+        return 0;
     }
 }

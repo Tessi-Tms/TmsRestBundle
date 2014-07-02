@@ -38,7 +38,7 @@ abstract class AbstractHypermediaFormatter
         $this->router = $router;
         $this->criteriaBuilder = $criteriaBuilder;
         $this->serializer = $serializer;
-        
+
         // Formatters default attributes
         $this->currentRouteName = $currentRouteName;
         $this->format = $format;
@@ -66,12 +66,11 @@ abstract class AbstractHypermediaFormatter
      *
      * @return array
      */
-    public function formatMetadata()
+    protected function formatMetadata()
     {
         return array(
             'type' => $this->getType(),
-            AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_NAME =>
-                $this->getSerializerContextGroup()
+            AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_NAME => $this->getSerializerContextGroup()
         );
     }
 
@@ -80,26 +79,26 @@ abstract class AbstractHypermediaFormatter
      *
      * @return array
      */
-    abstract public function formatData();
+    abstract protected function formatData();
 
     /**
      * Format raw data to have hypermedia links in output
      *
      * @return array
      */
-    abstract public function formatLinks();
+    abstract protected function formatLinks();
 
     /**
      * Give object type
      *
      * @return string
      */
-    abstract public function getType();
+    abstract protected function getType();
 
     /**
      * Give object serializerContextGroup
      *
      * @return string
      */
-    abstract public function getSerializerContextGroup();
+    abstract protected function getSerializerContextGroup();
 }

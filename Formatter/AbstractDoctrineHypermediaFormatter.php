@@ -11,9 +11,6 @@
 namespace Tms\Bundle\RestBundle\Formatter;
 
 use Doctrine\Common\Persistence\ObjectManager;
-use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
-use Symfony\Component\Routing\Router;
-use JMS\Serializer\Serializer;
 
 abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFormatter
 {
@@ -42,7 +39,7 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
      *
      * @return ClassMetadataCollection
      */
-    public function getClassMetadata($namespace = null)
+    protected function getClassMetadata($namespace = null)
     {
         $namespace = $namespace ? $namespace : $this->objectNamespace;
 
@@ -56,7 +53,7 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
      *
      * @return string
      */
-    public function getClassNamespace($namespace = null)
+    protected function getClassNamespace($namespace = null)
     {
         $namespace = $namespace ? $namespace : $this->objectNamespace;
 
@@ -83,11 +80,11 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
      *
      * @return string
      */
-    public function getClassIdentifier($namespace = null)
+    protected function getClassIdentifier($namespace = null)
     {
         $identifier = $this->getClassMetadata($namespace)->getIdentifier();
 
-        return $identifier;
+        return is_string($identifier) ? $identifier : $identifier[0];
     }
 
     /**
@@ -95,7 +92,7 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
      *
      * @return string
      */
-    public function getType()
+    protected function getType()
     {
         return $this->getClassNamespace();
     }
@@ -110,5 +107,5 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
         return parent::format();
     }
 
-    abstract public function getObjectsFromRepository();
+    abstract protected function getObjectsFromRepository();
 }

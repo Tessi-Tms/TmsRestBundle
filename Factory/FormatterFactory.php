@@ -10,74 +10,11 @@
 
 namespace Tms\Bundle\RestBundle\Factory;
 
-use Tms\Bundle\RestBundle\Formatter\DoctrineCollectionHypermediaFormatter;
-use Tms\Bundle\RestBundle\Formatter\DoctrineItemHypermediaFormatter;
-use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
-use Symfony\Component\Routing\Router;
-use JMS\Serializer\Serializer;
 use Tms\Bundle\RestBundle\Formatter\Provider\FormatterProviderInterface;
 
 class FormatterFactory
 {
     private $formatterProviders = array();
-
-    // Services
-    protected $serializer;
-    protected $router;
-    protected $criteriaBuilder;
-
-    /**
-     * Constructor
-     *
-     */
-    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer)
-    {
-        $this->router = $router;
-        $this->criteriaBuilder = $criteriaBuilder;
-        $this->serializer = $serializer;
-    }
-
-    /**
-     * Instantiate a DoctrineCollectionHypermediaFormatter (TO DO: DELETE)
-     *
-     * @param string $currentRouteName
-     * @param string $format
-     *
-     * @return DoctrineCollectionHypermediaFormatter
-     */
-    public function buildDoctrineCollectionHypermediaFormatter($currentRouteName, $format)
-    {
-        return new DoctrineCollectionHypermediaFormatter(
-            $this->router,
-            $this->criteriaBuilder,
-            $this->serializer,
-            $currentRouteName,
-            $format
-        );
-    }
-
-    /**
-     * Instantiate a DoctrineItemHypermediaFormatter (TO DO: DELETE)
-     *
-     * @param string $currentRouteName
-     * @param string $format
-     * @param mixed  $objectPKValue
-     * @param mixed  $objectPK
-     *
-     * @return DoctrineItemHypermediaFormatter
-     */
-    public function buildDoctrineItemHypermediaFormatter($currentRouteName, $format, $objectPKValue, $objectPK = 'id')
-    {
-        return new DoctrineItemHypermediaFormatter(
-            $this->router,
-            $this->criteriaBuilder,
-            $this->serializer,
-            $currentRouteName,
-            $format,
-            $objectPKValue,
-            $objectPK
-        );
-    }
 
     /**
      * Add a formatter provider.

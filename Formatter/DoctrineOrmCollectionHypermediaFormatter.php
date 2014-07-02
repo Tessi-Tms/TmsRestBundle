@@ -9,14 +9,12 @@ namespace Tms\Bundle\RestBundle\Formatter;
  *
  * @author Thomas Prelot <thomas.prelot@tessi.fr>
  */
-class DoctrineOrmHypermediaFormatter extends DoctrineCollectionHypermediaFormatter
+class DoctrineOrmCollectionHypermediaFormatter extends AbstractDoctrineCollectionHypermediaFormatter
 {
     /**
-     * Add query sort to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
+     * {@inheritdoc }
      */
-    public function addSortToQueryBuilder(/*QueryBuilder*/ $qb)
+    protected function addSortToQueryBuilder($qb)
     {
         foreach($this->sort as $field => $order) {
             $qb->addOrderBy(sprintf('object.%s', $field), $order);
@@ -26,22 +24,18 @@ class DoctrineOrmHypermediaFormatter extends DoctrineCollectionHypermediaFormatt
     }
 
     /**
-     * Add query pagination to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
+     * {@inheritdoc }
      */
-    public function addPaginationToQueryBuilder(/*QueryBuilder*/ $qb)
+    protected function addPaginationToQueryBuilder($qb)
     {
         $qb->setFirstResult($this->computeOffsetWithPage());
         $qb->setMaxResults($this->limit);
     }
 
     /**
-     * Add query criteria to a Query Builder
-     *
-     * @return Doctrine\ORM\QueryBuilder
+     * {@inheritdoc }
      */
-    public function addCriteriaToQueryBuilder(/*QueryBuilder*/ $qb)
+    protected function addCriteriaToQueryBuilder($qb)
     {
         if(!$this->criteria) {
             return $qb;
@@ -64,11 +58,9 @@ class DoctrineOrmHypermediaFormatter extends DoctrineCollectionHypermediaFormatt
     }
 
     /**
-     * Prepare a query builder to count objects
-     *
-     * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
+     * {@inheritdoc }
      */
-    public function prepareQueryBuilderCount($namespace = null)
+    protected function prepareCountQueryBuilder($namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
@@ -81,5 +73,15 @@ class DoctrineOrmHypermediaFormatter extends DoctrineCollectionHypermediaFormatt
         $this->addCriteriaToQueryBuilder($qb);
 
         return $qb;
+    }
+
+    /**
+     * {@inheritdoc }
+     */
+    protected function countObjects($namespace = null)
+    {
+        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
+
+        return intval($this->prepareQueryCount($namespace)->getSingleScalarResult());
     }
 }
