@@ -11,7 +11,7 @@ use Tms\Bundle\RestBundle\DependencyInjection\Compiler\InitializeFormatterFactor
  */
 class TmsRestBundle extends Bundle
 {
-	public function build(ContainerBuilder $container)
+    public function build(ContainerBuilder $container)
     {
         parent::build($container);
 
