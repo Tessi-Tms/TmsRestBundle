@@ -105,14 +105,18 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     /**
      * Generate a link for a single object
      * 
-     * @param string $routeName
-     * @param Object $object
+     * @param string  $routeName
+     * @param Object  $object
+     * @param boolean $isEmbedded
      * 
      * @return Collection
      */
-    protected function generateLink($routeName, $object)
+    protected function generateLink($routeName, $object, $isEmbedded = false)
     {
         $classIdentifier = $this->getClassIdentifier(get_class($object));
+        if(!$isEmbedded && isset($this->objectPK)) {
+            $classIdentifier = $this->objectPK;
+        }
         $getMethod = sprintf("get%s", ucfirst($classIdentifier));
 
         return $this->router->generate(
@@ -168,7 +172,8 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
                 'rel'   => 'embedded',
                 'href'  => $this->generateLink(
                     $embeddedCollectionRoute,
-                    $this->object
+                    $this->object,
+                    1
                 )
             );
         }
