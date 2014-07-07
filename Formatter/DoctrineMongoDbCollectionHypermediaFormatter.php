@@ -5,7 +5,7 @@ namespace Tms\Bundle\RestBundle\Formatter;
 //use Doctrine\ODM\MongoDB\Query\Builder as QueryBuilder;
 
 /**
- * DoctrineMongoDbHypermediaFormatter is the doctrine mongoDB collection formatter.
+ * DoctrineMongoDbCollectionHypermediaFormatter is the doctrine mongoDB collection formatter.
  *
  * @author Thomas Prelot <thomas.prelot@tessi.fr>
  */
