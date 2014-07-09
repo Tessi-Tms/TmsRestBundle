@@ -15,6 +15,6 @@ class DoctrineMongoDbCollectionHypermediaFormatterProvider extends AbstractForma
      */
     protected function getFormatterClassName()
     {
-        return 'Tms\Bundle\RestBundle\Formatter\DoctrineMongoDbHypermediaFormatter';
+        return 'Tms\Bundle\RestBundle\Formatter\DoctrineMongoDbCollectionHypermediaFormatter';
     }
 }
