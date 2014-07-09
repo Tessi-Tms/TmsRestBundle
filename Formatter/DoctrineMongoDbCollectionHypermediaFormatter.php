@@ -14,44 +14,44 @@ class DoctrineMongoDbCollectionHypermediaFormatter extends AbstractDoctrineColle
     /**
      * {@inheritdoc }
      */
-    protected function addSortToQueryBuilder($qb)
+    protected function addSortToQueryBuilder($queryBuilder)
     {
-        $qb->sort($this->sort);
+        $queryBuilder->sort($this->sort);
 
-        return $qb;
+        return $queryBuilder;
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function addPaginationToQueryBuilder($qb)
+    protected function addPaginationToQueryBuilder($queryBuilder)
     {
-        $qb->skip($this->computeOffsetWithPage());
-        $qb->limit($this->limit);
+        $queryBuilder->skip($this->computeOffsetWithPage());
+        $queryBuilder->limit($this->limit);
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function addCriteriaToQueryBuilder($qb)
+    protected function addCriteriaToQueryBuilder($queryBuilder)
     {
         if (!$this->criteria) {
-            return $qb;
+            return $queryBuilder;
         }
 
-        $class = new \ReflectionClass($qb);
+        $class = new \ReflectionClass($queryBuilder);
 
         if ($class->hasMethod('match')) {
             foreach ($this->criteria as $criterionName => $criterionValue) {
-                $qb->match($criterionName, $criterionValue);
+                $queryBuilder->match($criterionName, $criterionValue);
             }
         } else {
             foreach ($this->criteria as $criterionName => $criterionValue) {
-                $qb->field($criterionName)->equals($criterionValue);
+                $queryBuilder->field($criterionName)->equals($criterionValue);
             }
         }
 
-        return $qb;
+        return $queryBuilder;
     }
 
     /**
@@ -61,15 +61,14 @@ class DoctrineMongoDbCollectionHypermediaFormatter extends AbstractDoctrineColle
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
-        $qb = $this
+        $queryBuilder = $this
             ->objectManager
             ->getRepository($this->objectNamespace)
             ->createQueryBuilder()
         ;
+        $queryBuilder = $this->addCriteriaToQueryBuilder($queryBuilder);
 
-        $this->addCriteriaToQueryBuilder($qb);
-
-        return $qb;
+        return $queryBuilder;
     }
 
     /**
