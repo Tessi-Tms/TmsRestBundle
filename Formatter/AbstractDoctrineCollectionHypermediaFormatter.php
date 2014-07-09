@@ -445,7 +445,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     {
         $this->sort = $this
             ->criteriaBuilder
-            ->defineSortValue($sort)
+            ->cleanSortValue($sort)
         ;
         
         return $this;
