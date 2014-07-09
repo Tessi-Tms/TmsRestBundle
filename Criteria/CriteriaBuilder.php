@@ -67,6 +67,7 @@ class CriteriaBuilder
         foreach ($criteria as $name => $value) {
             if (null === $value || $value === array()) {
                 unset($criteria[$name]);
+
                 continue;
             }
 
