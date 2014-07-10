@@ -20,6 +20,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected $offset = null;
     protected $totalCount = null;
 
+    protected $queryBuilder = null;
+    protected $aliasName = null;
     protected $objects;
     protected $itemRoutes = null;
 
@@ -88,8 +90,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             'offset'   => $this->offset
         ));
 
-        // Count objects according to a given criteria
-        $this->totalCount = $this->countObjects($namespace);
 
         // Retrieve objects according to a given criteria
         $this->objects = $this
@@ -97,28 +97,44 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             ->getQuery()
             ->execute();
 
+        // Count objects according to a given criteria
+        $this->totalCount = $this->countObjects($namespace);
+
         return $this;
+    }
+
+    /**
+     * Return alias name to use in query builder
+     *
+     * @return string $aliasNae
+     */
+    protected function getAliasName()
+    {
+        return is_null($this->aliasName) ? 'object' : $this->aliasName;
     }
 
     /**
      * Return a Query Builder to find objects according to params
      *
+     * @param string $namespace
      * @return Doctrine\ORM\QueryBuilder
      */
     protected function findByQueryBuilder($namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-        $qb = $this
+
+        $queryBuilder = isset($this->queryBuilder) ? $this->queryBuilder : $this
             ->objectManager
             ->getRepository($namespace)
-            ->createQueryBuilder('object')
+            ->createQueryBuilder($this->getAliasName())
         ;
+        
 
-        $this->addSortToQueryBuilder($qb);
-        $this->addPaginationToQueryBuilder($qb);
-        $this->addCriteriaToQueryBuilder($qb);
+        $this->addSortToQueryBuilder($queryBuilder);
+        $this->addPaginationToQueryBuilder($queryBuilder);
+        $this->addCriteriaToQueryBuilder($queryBuilder);
 
-        return $qb;
+        return $queryBuilder;
     }
 
     /**
@@ -233,6 +249,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 true
             );
         }
+        
+        return 0;
     }
 
     /**
@@ -349,6 +367,28 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
+     *  Set a query builder by using specific method on repository
+     *
+     * @param string $methodName
+     * @param string $aliasName
+     * @param array  $arguments
+     * @param string $namespace
+     */
+    public function initQueryBuilder($methodName, $aliasName, array $arguments = null, $namespace = null)
+    {
+        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
+        $repository = $this->queryBuilder = $this
+            ->objectManager
+            ->getRepository($namespace)
+        ;
+
+        $this->queryBuilder = isset($arguments) ? $repository->$methodName($arguments) : $repository->$methodName();
+        $this->aliasName = $aliasName;
+
+        return $this;
+    }
+
+    /**
      * Add a new route associated to an item namespace
      *
      * @param string $itemNamespace
@@ -461,7 +501,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    abstract protected function addSortToQueryBuilder($qb);
+    abstract protected function addSortToQueryBuilder($queryBuilder);
 
     /**
      * Add query pagination to a Query Builder
@@ -469,7 +509,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    abstract protected function addPaginationToQueryBuilder($qb);
+    abstract protected function addPaginationToQueryBuilder($queryBuilder);
 
     /**
      * Add query criteria to a Query Builder
@@ -477,7 +517,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    abstract protected function addCriteriaToQueryBuilder($qb);
+    abstract protected function addCriteriaToQueryBuilder($queryBuilder);
 
     /**
      * Prepare a query builder to count objects
