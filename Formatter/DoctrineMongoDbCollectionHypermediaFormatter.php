@@ -79,7 +79,6 @@ class DoctrineMongoDbCollectionHypermediaFormatter extends AbstractDoctrineColle
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
-        // TO DEFINE
-        return 0;
+        return $this->prepareCountQueryBuilder($namespace)->getQuery()->execute()->count();
     }
 }
