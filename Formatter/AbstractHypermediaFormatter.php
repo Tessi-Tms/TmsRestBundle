@@ -29,6 +29,9 @@ abstract class AbstractHypermediaFormatter
     protected $currentRouteName;
     protected $format;
 
+    // Actions
+    protected $actions = array();
+
     /**
      * Constructor
      */
@@ -57,7 +60,8 @@ abstract class AbstractHypermediaFormatter
         return array(
             'metadata' => $this->formatMetadata(),
             'data'     => $this->formatData(),
-            'links'    => $this->formatLinks()
+            'links'    => $this->formatLinks(),
+            'actions'  => $this->formatActions()
         );
     }
 
@@ -87,6 +91,57 @@ abstract class AbstractHypermediaFormatter
      * @return array
      */
     abstract protected function formatLinks();
+
+    /**
+     * Set an action.
+     *
+     * @param string $name           The identifier name.
+     * @param string $method         The HTTP method.
+     * @param string $url            The url.
+     * @param array  $requiredParams The required parameters.
+     * @param array  $optionalParams The optional parameters.
+     * 
+     * @return AbstractHypermediaFormatter This.
+     */
+    public function setAction(
+        $name,
+        $method,
+        $url,
+        array $requiredParams = array(),
+        array $optionalParams = array()
+    )
+    {
+        $this->actions[$name] = array(
+            'href' => $url,
+            'method' => $method,
+            'requiredParams' => $requiredParams,
+            'optionalParams' => $optionalParams
+        );
+
+        return $this;
+    }
+
+    /**
+     * Format actions into a given layout for hypermedia
+     *
+     * @return array
+     */
+    protected function formatActions()
+    {
+        $actions = array();
+
+        foreach ($this->actions as $name => $action) {
+            $actions[$name] = array(
+                'rel' => $name,
+                'href' => $action['href'],
+                'method' => $action['method'],
+                'requiredParams' => $action['requiredParams'],
+                'optionalParams' => $action['optionalParams']
+            );
+        }
+
+        return $actions;
+    }
 
     /**
      * Give object type
