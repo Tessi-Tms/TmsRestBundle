@@ -16,3 +16,9 @@ services:
         arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
         tags:
             - { name: tms_rest.formatter.provider, id: mongodb_collection }
+
+    tms_rest.formatter.provider.inquire:
+        class: Tms\Bundle\RestBundle\Formatter\Provider\InquireHypermediaFormatterProvider
+        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        tags:
+            - { name: tms_rest.formatter.provider, id: inquire }

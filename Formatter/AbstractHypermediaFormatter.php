@@ -57,18 +57,35 @@ abstract class AbstractHypermediaFormatter
      */
     public function format()
     {
-        return array(
-            'metadata' => $this->formatMetadata(),
-            'data'     => $this->formatData(),
-            'links'    => $this->formatLinks(),
-            'actions'  => $this->formatActions()
-        );
+        $formatting = array();
+
+        $metadata = $this->formatMetadata();
+        if (null !== $metadata) {
+            $formatting['matadata'] = $metadata;
+        }
+
+        $data = $this->formatData();
+        if (null !== $data) {
+            $formatting['data'] = $data;
+        }
+
+        $links = $this->formatLinks();
+        if (null !== $links) {
+            $formatting['links'] = $links;
+        }
+
+        $actions = $this->formatActions();
+        if (null !== $actions) {
+            $formatting['actions'] = $actions;
+        }
+
+        return $formatting;
     }
 
     /**
      * Format raw data to have hypermedia metadata in output
      *
-     * @return array
+     * @return array|null
      */
     protected function formatMetadata()
     {
@@ -81,14 +98,14 @@ abstract class AbstractHypermediaFormatter
     /**
      * Format raw data to have hypermedia data in output
      *
-     * @return array
+     * @return array|null
      */
     abstract protected function formatData();
 
     /**
      * Format raw data to have hypermedia links in output
      *
-     * @return array
+     * @return array|null
      */
     abstract protected function formatLinks();
 
@@ -100,7 +117,7 @@ abstract class AbstractHypermediaFormatter
      * @param string $url            The url.
      * @param array  $requiredParams The required parameters.
      * @param array  $optionalParams The optional parameters.
-     * 
+     *
      * @return AbstractHypermediaFormatter This.
      */
     public function setAction(
@@ -124,7 +141,7 @@ abstract class AbstractHypermediaFormatter
     /**
      * Format actions into a given layout for hypermedia
      *
-     * @return array
+     * @return array|null
      */
     protected function formatActions()
     {
