@@ -1,4 +1,4 @@
-.php<?php
+<?php
 
 namespace Tms\Bundle\RestBundle\Formatter\Provider;
 
