@@ -61,7 +61,7 @@ abstract class AbstractHypermediaFormatter
 
         $metadata = $this->formatMetadata();
         if (null !== $metadata) {
-            $formatting['matadata'] = $metadata;
+            $formatting['metadata'] = $metadata;
         }
 
         $data = $this->formatData();
