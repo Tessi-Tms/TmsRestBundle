@@ -11,10 +11,12 @@
 namespace Tms\Bundle\RestBundle\Formatter;
 
 use Symfony\Component\Routing\Router;
+use Symfony\Component\Routing\Route;
+use Symfony\Component\Config\Loader\LoaderInterface;
 use JMS\Serializer\Serializer;
-use FOS\RestBundle\Routing\Loader\Reader\RestControllerReader;
 use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
-use Tms\Bundle\RestBundle\Request\ParamReaderProvider;
+use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
+use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
 
 abstract class AbstractHypermediaFormatter
 {
@@ -26,7 +28,7 @@ abstract class AbstractHypermediaFormatter
     protected $serializer;
     protected $router;
     protected $criteriaBuilder;
-    protected $controllerReader;
+    protected $routeLoader;
     protected $paramReaderProvider;
 
     // Formatters default attributes
@@ -44,8 +46,9 @@ abstract class AbstractHypermediaFormatter
         Router $router,
         CriteriaBuilder $criteriaBuilder,
         Serializer $serializer,
-        RestControllerReader $controllerReader,
-        ParamReaderProvider $paramReaderProvider,
+        LoaderInterface $routeLoader,
+        ParamReaderProviderInterface $paramReaderProvider,
+        RequestProviderInterface $requestProvider,
         $currentRouteName,
         $format
     )
@@ -54,8 +57,9 @@ abstract class AbstractHypermediaFormatter
         $this->router = $router;
         $this->criteriaBuilder = $criteriaBuilder;
         $this->serializer = $serializer;
-        $this->controllerReader = $controllerReader;
+        $this->routeLoader = $routeLoader;
         $this->paramReaderProvider = $paramReaderProvider;
+        $this->requestProvider = $requestProvider;
 
         // Formatters default attributes
         $this->currentRouteName = $currentRouteName;
@@ -162,7 +166,7 @@ abstract class AbstractHypermediaFormatter
     protected function formatActions()
     {
         $actions = $this->formatControllersActions();
-var_dump($actions);die;
+
         return array_merge($this->actions, $actions);
     }
 
@@ -188,34 +192,35 @@ var_dump($actions);die;
     protected function formatControllersActions()
     {
         $actions = array();
+        $request = $this->requestProvider->provide();
+        $baseUrl = sprintf('%s://%s', $request->getScheme(), $request->getHttpHost());
 
         foreach ($this->controllers as $controller) {
             $paramReader = $this->paramReaderProvider->provide();
-            $class = new \ReflectionClass($controller);
+            $localRouteCollection = $this->routeLoader->load($controller);
+            $appRouteCollection = $this->router->getRouteCollection();
 
-            foreach ($class->getMethods() as $method) {
-                $methodName = $method->getName();
-                $actionMethodSuffix = 'Action';
-
-                $routeCollection = $this->controllerReader->read($class);
-
-                if ($actionMethodSuffix === substr($methodName, 0 - strlen($actionMethodSuffix))) {
-                    foreach ($routeCollection->all() as $routeName => $route) {
-                        if ($methodName === $route->getDefault('_controller')) {
-                            $actionName = $routeName;
-                        }
+            foreach ($localRouteCollection as $actionName => $localRoute) {
+                foreach ($appRouteCollection as $appRoute) {
+                    if ($appRoute->getDefault('_controller') === $localRoute->getDefault('_controller')) {
+                        $route = $appRoute;
                     }
+                }
 
-                    if (isset($actionName)) {
-                        $route = $routeCollection->get($actionName);
+                if (isset($route)) {
+                    $path = $this->retrieveRoutePath($route);
+
+                    if ($path) {
                         $httpMethods = $route->getMethods();
-                        $url = sprintf('http://%s%s',
-                            $route->getHost(),
-                            $route->getPath()
+                        $url = sprintf('%s%s',
+                            $baseUrl,
+                            $path
                         );
 
                         $requiredParams = array();
                         $optionalParams = array();
+                        list($controllerClass, $controllerMethod) = explode('::', $route->getDefault('_controller'));
+                        $method = new \ReflectionMethod($controllerClass, $controllerMethod);
 
                         foreach ($paramReader->getParamsFromMethod($method) as $name => $param) {
                             if ($param->nullable) {
@@ -240,6 +245,24 @@ var_dump($actions);die;
 
             return $actions;
         }
+    }
+
+    /**
+     * Retrieve the path of a route.
+     *
+     * @param Route $route The route.
+     *
+     * @return string|null The path or null if the route should not be used.
+     */
+    protected function retrieveRoutePath(Route $route)
+    {
+        $path = $route->getPath();
+
+        return str_replace(
+            array('{_format}'),
+            array($this->format),
+            $path
+        );
     }
 
     /**
