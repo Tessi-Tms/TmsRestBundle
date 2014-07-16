@@ -1,18 +1,39 @@
 services:
     tms_rest.formatter.provider.item:
         class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineItemHypermediaFormatterProvider
-        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        arguments:
+            - @router
+            - @tms_rest.criteria_builder
+            - @jms_serializer
+            - @fos_rest.routing.loader.reader.controller
+            - @tms_rest.request.param_reader_provider
         tags:
             - { name: tms_rest.formatter.provider, id: item }
 
     tms_rest.formatter.provider.orm_collection:
         class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineOrmCollectionHypermediaFormatterProvider
-        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        arguments:
+            - @router
+            - @tms_rest.criteria_builder
+            - @jms_serializer
+            - @fos_rest.routing.loader.reader.controller
+            - @tms_rest.request.param_reader_provider
         tags:
             - { name: tms_rest.formatter.provider, id: orm_collection }
 
     tms_rest.formatter.provider.mongodb_collection:
         class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineMongoDbCollectionHypermediaFormatterProvider
-        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        arguments:
+            - @router
+            - @tms_rest.criteria_builder
+            - @jms_serializer
+            - @fos_rest.routing.loader.reader.controller
+            - @tms_rest.request.param_reader_provider
         tags:
             - { name: tms_rest.formatter.provider, id: mongodb_collection }
+
+    tms_rest.formatter.provider.inquire:
+        class: Tms\Bundle\RestBundle\Formatter\Provider\InquireHypermediaFormatterProvider
+        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+        tags:
+            - { name: tms_rest.formatter.provider, id: inquire }

@@ -23,7 +23,7 @@ abstract class AbstractDoctrineHypermediaFormatter extends AbstractHypermediaFor
      * @param ObjectManager $objectManager
      * @param string $objectNamespace
      * 
-     * @return array
+     * @return AbstractDoctrineHypermediaFormatter This.
      */
     public function setObjectManager(ObjectManager $objectManager, $objectNamespace)
     {
