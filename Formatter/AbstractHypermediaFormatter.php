@@ -161,13 +161,14 @@ abstract class AbstractHypermediaFormatter
     /**
      * Format actions into a given layout for hypermedia
      *
-     * @return array|null
+     * @return array
      */
     protected function formatActions()
     {
-        $actions = $this->formatControllersActions();
-
-        return array_merge($this->actions, $actions);
+        return array_merge(
+            $this->actions,
+            $this->formatControllersActions()
+        );
     }
 
     /**
@@ -242,9 +243,9 @@ abstract class AbstractHypermediaFormatter
                     }
                 }
             }
-
-            return $actions;
         }
+
+        return $actions;
     }
 
     /**
