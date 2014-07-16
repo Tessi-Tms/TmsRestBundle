@@ -5,6 +5,7 @@ parameters:
     tms_rest.event_listener.link_request.class:   Tms\Bundle\RestBundle\EventListener\LinkRequestListener
     tms_rest.formatter.factory.class:             Tms\Bundle\RestBundle\Factory\FormatterFactory
     tms_rest.request.param_reader_provider.class: Tms\Bundle\RestBundle\Request\ParamReaderProvider
+    tms_rest.request.provider.class:              Tms\Bundle\RestBundle\Request\RequestProvider
 
 services:
     tms_rest.criteria_builder:
@@ -22,4 +23,8 @@ services:
 
     tms_rest.request.param_reader_provider:
         class: %tms_rest.request.param_reader_provider.class%
+        arguments: [@service_container]
+
+    tms_rest.request.provider:
+        class: %tms_rest.request.provider.class%
         arguments: [@service_container]

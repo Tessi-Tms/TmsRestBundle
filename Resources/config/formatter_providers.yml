@@ -5,8 +5,9 @@ services:
             - @router
             - @tms_rest.criteria_builder
             - @jms_serializer
-            - @fos_rest.routing.loader.reader.controller
+            - @fos_rest.routing.loader.controller
             - @tms_rest.request.param_reader_provider
+            - @tms_rest.request.provider
         tags:
             - { name: tms_rest.formatter.provider, id: item }
 
@@ -16,8 +17,9 @@ services:
             - @router
             - @tms_rest.criteria_builder
             - @jms_serializer
-            - @fos_rest.routing.loader.reader.controller
+            - @fos_rest.routing.loader.controller
             - @tms_rest.request.param_reader_provider
+            - @tms_rest.request.provider
         tags:
             - { name: tms_rest.formatter.provider, id: orm_collection }
 
@@ -27,8 +29,9 @@ services:
             - @router
             - @tms_rest.criteria_builder
             - @jms_serializer
-            - @fos_rest.routing.loader.reader.controller
+            - @fos_rest.routing.loader.controller
             - @tms_rest.request.param_reader_provider
+            - @tms_rest.request.provider
         tags:
             - { name: tms_rest.formatter.provider, id: mongodb_collection }
 
