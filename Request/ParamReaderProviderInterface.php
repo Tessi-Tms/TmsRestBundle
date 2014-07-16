@@ -13,7 +13,7 @@ interface ParamReaderProviderInterface
     /**
      * Provide the current param reader.
      *
-     * @return FOS\RestBundle\Request\ParamReaderInterface The param reader.
+     * @return \FOS\RestBundle\Request\ParamReaderInterface The param reader.
      */
     function provide();
 }
