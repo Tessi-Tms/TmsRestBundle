@@ -2,8 +2,6 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
-//use Doctrine\ODM\MongoDB\Query\Builder as QueryBuilder;
-
 /**
  * DoctrineMongoDbCollectionHypermediaFormatter is the doctrine mongoDB collection formatter.
  *
@@ -78,7 +76,6 @@ class DoctrineMongoDbCollectionHypermediaFormatter extends AbstractDoctrineColle
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
-        // TO DEFINE
-        return 0;
+        return $this->prepareCountQueryBuilder($namespace)->getQuery()->execute()->count();
     }
 }

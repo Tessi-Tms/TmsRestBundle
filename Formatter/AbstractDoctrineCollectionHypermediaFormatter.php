@@ -53,6 +53,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected function formatData()
     {
         $data = array();
+        $actions = $this->formatActions();
 
         foreach($this->objects as $object) {
             $data[] = array(
@@ -67,7 +68,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                         'rel'  => 'self',
                         'href' => $this->generateItemLink($object)
                     )
-                )
+                ),
+                'actions' => $this->formatItemActions($actions, $object)
             );
         }
 
@@ -251,6 +253,47 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         }
         
         return 0;
+    }
+
+    /**
+     * Format item actions into a given layout for hypermedia
+     *
+     * @param array  $actions The patterns of the actions
+     * @param object $object  The item object.
+     *
+     * @return array The actions of the item.
+     */
+    protected function formatItemActions(array $actions, $object)
+    {
+        $itemActions = array();
+
+        foreach ($actions as $action) {
+            $href = $action['href'];
+
+            if (isset($this->objectPK)) {
+                $classIdentifier = $this->objectPK;
+            } else {
+                $classIdentifier = $this->getClassIdentifier(get_class($object));
+            }
+
+            $id = sprintf('{%s}', $classIdentifier);
+
+            if (strpos($href, $id) === false) {
+                continue;
+            }
+
+            $getMethod = sprintf("get%s", ucfirst($classIdentifier));
+
+            $action['href'] = str_replace(
+                array($id, '{_format}'),
+                array($object->$getMethod(), $this->format),
+                $href
+            );
+
+            $itemActions[] = $action;
+        }
+
+        return $itemActions;
     }
 
     /**

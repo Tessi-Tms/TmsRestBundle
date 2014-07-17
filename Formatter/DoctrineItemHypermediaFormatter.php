@@ -11,10 +11,14 @@
 namespace Tms\Bundle\RestBundle\Formatter;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
+use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\Router;
+use Symfony\Component\Config\Loader\LoaderInterface;
 use JMS\Serializer\Serializer;
 use JMS\Serializer\SerializationContext;
+use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
+use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
+use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
 
 class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
@@ -26,12 +30,32 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     /**
      * Constructor
      */
-    public function __construct(Router $router, CriteriaBuilder $criteriaBuilder, Serializer $serializer, $currentRouteName, $format, $objectPKValue, $objectPK = 'id')
+    public function __construct(
+        Router $router,
+        CriteriaBuilder $criteriaBuilder,
+        Serializer $serializer,
+        LoaderInterface $routeLoader,
+        ParamReaderProviderInterface $paramReaderProvider,
+        RequestProviderInterface $requestProvider,
+        $currentRouteName,
+        $format,
+        $objectPKValue,
+        $objectPK = 'id'
+    )
     {
         $this->objectPKValue = $objectPKValue;
         $this->objectPK = $objectPK;
 
-        parent::__construct($router, $criteriaBuilder, $serializer, $currentRouteName, $format);
+        parent::__construct(
+            $router,
+            $criteriaBuilder,
+            $serializer,
+            $routeLoader,
+            $paramReaderProvider,
+            $requestProvider,
+            $currentRouteName,
+            $format
+        );
     }
 
     /**
@@ -178,5 +202,32 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         }
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc }
+     */
+    protected function retrieveRoutePath(Route $route)
+    {
+        $path = $route->getPath();
+
+        if (isset($this->objectPK)) {
+            $classIdentifier = $this->objectPK;
+        } else {
+            $classIdentifier = $this->getClassIdentifier(get_class($this->object));
+        }
+        $id = sprintf('{%s}', $classIdentifier);
+
+        if (strpos($path, $id) === false) {
+            return null;
+        }
+
+        $getMethod = sprintf("get%s", ucfirst($classIdentifier));
+
+        return str_replace(
+            array($id, '{_format}'),
+            array($this->object->$getMethod(), $this->format),
+            $path
+        );
     }
 }
