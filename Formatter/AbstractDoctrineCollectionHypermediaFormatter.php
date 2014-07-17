@@ -382,7 +382,10 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             ->getRepository($namespace)
         ;
 
-        $this->queryBuilder = isset($arguments) ? $repository->$methodName($arguments) : $repository->$methodName();
+        // TODO : find a way to give params to $method
+//        $this->queryBuilder = isset($arguments) ? $repository->$methodName($arguments) : $repository->$methodName();
+        
+        $this->queryBuilder = $repository->$methodName();
         $this->aliasName = $aliasName;
 
         return $this;

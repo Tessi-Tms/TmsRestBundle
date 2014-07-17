@@ -158,12 +158,11 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      * You can chain this method easily
      *
      * @param string $embeddedName
-     * @param string $embeddedSingleRoute
      * @param string $embeddedCollectionRoute
      * 
      * @return $this
      */
-    public function addEmbedded($embeddedName, $embeddedSingleRoute, $embeddedCollectionRoute)
+    public function addEmbedded($embeddedName, $embeddedCollectionRoute)
     {
         $this->getObjectsFromRepository();
 
