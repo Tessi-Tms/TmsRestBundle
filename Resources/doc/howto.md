@@ -130,16 +130,14 @@ Retrieve one offer
                 // Same parameters as for a collection
                 ->addEmbedded(
                     'products', // embedded collection name
-                    'api_products_get_product', // embedded single route
                     'api_offers_get_offer_products' // embedded collection route
                 ) // example with related products of an offer
                 ->addEmbedded(
                     'customers',
-                    'api_customers_get_customer',
                     'api_offers_get_offer_customers'
                 ) // example with related customers of an offer
-                // addEmbedded() require 3 parameters :
-                // embedded collection name, embedded single route, embedded collection route
+                // addEmbedded() require 2 parameters :
+                // embedded collection name, embedded collection route
                 ->format(),
                 Codes::HTTP_OK
             );
