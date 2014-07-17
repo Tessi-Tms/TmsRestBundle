@@ -69,8 +69,7 @@ class DoctrineOrmCollectionHypermediaFormatter extends AbstractDoctrineCollectio
             ->getRepository($namespace)
             ->createQueryBuilder($this->getAliasName())
         ;
-        $this->addCriteriaToQueryBuilder($queryBuilder);
-        
+
         $queryBuilder->select(sprintf('COUNT(%s.id)', $this->getAliasName()));
 
         return $queryBuilder;
