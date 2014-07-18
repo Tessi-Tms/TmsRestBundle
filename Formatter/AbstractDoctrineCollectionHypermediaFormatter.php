@@ -92,15 +92,17 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             'offset'   => $this->offset
         ));
 
-
-        // Retrieve objects according to a given criteria
-        $this->objects = $this
-            ->findByQueryBuilder($namespace)
-            ->getQuery()
-            ->execute();
+        // Init query builder with criteria
+        $this->initCriteriaQueryBuilder($namespace);
 
         // Count objects according to a given criteria
-        $this->totalCount = $this->countObjects($namespace);
+        $this->totalCount = $this->countObjects();
+
+        // Add sort & pagination to query builder
+        $this->addSortToQueryBuilder();
+        $this->addPaginationToQueryBuilder();
+
+        $this->objects = $this->queryBuilder->getQuery()->execute();
 
         return $this;
     }
@@ -116,27 +118,22 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     * Return a Query Builder to find objects according to params
+     * Return a Query Builder to find objects according to criteria
      *
      * @param string $namespace
      * @return Doctrine\ORM\QueryBuilder
      */
-    protected function findByQueryBuilder($namespace = null)
+    protected function initCriteriaQueryBuilder($namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
 
-        $queryBuilder = isset($this->queryBuilder) ? $this->queryBuilder : $this
+        $this->queryBuilder = isset($this->queryBuilder) ? $this->queryBuilder : $this
             ->objectManager
             ->getRepository($namespace)
             ->createQueryBuilder($this->getAliasName())
         ;
-        
 
-        $this->addSortToQueryBuilder($queryBuilder);
-        $this->addPaginationToQueryBuilder($queryBuilder);
-        $this->addCriteriaToQueryBuilder($queryBuilder);
-
-        return $queryBuilder;
+        $this->addCriteriaToQueryBuilder();
     }
 
     /**
@@ -146,9 +143,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function cleanAndSetQueryParams(array $params)
     {
-        foreach($params as $name => $value) {
-            if(is_null($value)) {
-                $defineMethod = sprintf("define%sValue", ucfirst($name));
+        foreach ($params as $name => $value) {
+            if (is_null($value)) {
+                $defineMethod = sprintf("initDefault%sValue", ucfirst($name));
+                if (!method_exists($this, $defineMethod)) {
+                    throw new \Exception(sprintf("No %s method find to clean %s param.", $defineMethod, $name));
+                }
+    
                 $this->$name = $this
                     ->criteriaBuilder
                     ->$defineMethod()
@@ -427,7 +428,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
 
         // TODO : find a way to give params to $method
 //        $this->queryBuilder = isset($arguments) ? $repository->$methodName($arguments) : $repository->$methodName();
-        
+
         $this->queryBuilder = $repository->$methodName();
         $this->aliasName = $aliasName;
 
@@ -475,7 +476,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     {
         $this->limit = $this
             ->criteriaBuilder
-            ->defineLimitValue($limit)
+            ->initDefaultLimitValue($limit)
         ;
         
         return $this;
@@ -507,7 +508,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     {
         $this->page = $this
             ->criteriaBuilder
-            ->definePageValue($page)
+            ->initDefaultPageValue($page)
         ;
         
         return $this;
@@ -523,7 +524,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     {
         $this->offset = $this
             ->criteriaBuilder
-            ->defineOffsetValue($offset)
+            ->initDefaultOffsetValue($offset)
         ;
         
         return $this;
@@ -534,48 +535,43 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      *
      * @return \Doctrine\ORM\Query | Doctrine\ODM\MongoDB\Query\Query
      */
-    public function prepareQueryCount($namespace = null)
+    public function prepareQueryCount()
     {
-        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-
-        return $this->prepareCountQueryBuilder($namespace)->getQuery();
+        return $this->prepareCountQueryBuilder()->getQuery();
     }
 
     /**
      * Add query sort to a Query Builder
      *
-     * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    abstract protected function addSortToQueryBuilder($queryBuilder);
+    abstract protected function addSortToQueryBuilder();
 
     /**
      * Add query pagination to a Query Builder
      *
-     * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    abstract protected function addPaginationToQueryBuilder($queryBuilder);
+    abstract protected function addPaginationToQueryBuilder();
 
     /**
      * Add query criteria to a Query Builder
      *
-     * @param Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    abstract protected function addCriteriaToQueryBuilder($queryBuilder);
+    abstract protected function addCriteriaToQueryBuilder();
 
     /**
      * Prepare a query builder to count objects
      *
      * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
-    abstract protected function prepareCountQueryBuilder($namespace = null);
+    abstract protected function prepareCountQueryBuilder();
 
     /**
      * Count objects
      *
      * @return integer
      */
-    abstract protected function countObjects($namespace = null);
+    abstract protected function countObjects();
 }

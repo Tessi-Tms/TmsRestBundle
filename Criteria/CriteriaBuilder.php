@@ -85,7 +85,7 @@ class CriteriaBuilder
      * @param mixed $originalValue
      * @return integer
      */
-    public function defineLimitValue($originalValue = null)
+    public function initDefaultLimitValue($originalValue = null)
     {
         $defaultLimit = $this->configuration['pagination']['limit'];
         if (is_null($originalValue)) {
@@ -136,7 +136,7 @@ class CriteriaBuilder
      * @param mixed $originalValue
      * @return array
      */
-    public function defineSortValue($originalValue = null)
+    public function initDefaultSortValue($originalValue = null)
     {
         $defaultSort = $this->configuration['pagination']['sort'];
         $allowed_orders = array(self::ORDER_ASC, self::ORDER_DESC);
@@ -162,7 +162,7 @@ class CriteriaBuilder
      * @param mixed $originalValue
      * @return integer
      */
-    public function definePageValue($originalValue = null)
+    public function initDefaultPageValue($originalValue = null)
     {
         $defaultPage = $this->configuration['pagination']['page'];
         if(is_null($originalValue)) {
@@ -178,7 +178,7 @@ class CriteriaBuilder
      * @param mixed $originalValue
      * @return integer
      */
-    public function defineOffsetValue($originalValue = null)
+    public function initDefaultOffsetValue($originalValue = null)
     {
         $defaultOffset = $this->configuration['pagination']['offset'];
         if (is_null($originalValue)) {
