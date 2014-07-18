@@ -56,24 +56,31 @@ List all offers
     {
         $view = $this->view(
             $this
-                ->get('tms.rest.formatter.hypermedia') // hypermedia serfice
-                ->buildDoctrineCollectionHypermediaFormatter(
+                // Hypermedia factory.
+                ->get('tms_rest.formatter.factory')
+                // To build a collection formatter, the current route
+                // and format are required. orm_collection is the type
+                // of the collection (orm_collection or mondodb_collection for instance)
+                ->create(
+                    'orm_collection',
                     $this->getRequest()->get('_route'),
                     $this->getRequest()->getRequestFormat()
                 )
-                // To build a collection formatter, the CURRENT ROUTE
-                // and FORMAT are REQUIRED
+                // The object manager and the object namespace
+                // are required to set the object manager.
                 ->setObjectManager(
                     $this->get('doctrine.orm.entity_manager'),
                     'Foo\Entity\Offer' // Offer object class
                 )
-                // The object manager (odm OR orm) and the object namespace
-                // are required to set the object manager
+                // The criteria of the query.                
                 ->setCriteria(array(
                     'name'      => $name,
                     'reference' => $reference,
                     'status'    => $status
                 ))
+                // The pagination: criteria, limit, offset, sort and page 
+                // are optionnal parameters : if not given they are
+                // guessed by the default configuration.
                 ->setLimit($limit)
                 ->setSort(array(
                     'reference' => 'desc',
@@ -81,9 +88,10 @@ List all offers
                 ))
                 ->setOffset($offset)
                 ->setPage($page)
-                // criteria, limit, offset, sort and page are
-                // optionnal parameters : if not given they are
-                // guessed by the default configuration
+                // Add a controller to automaticaly add its actions to
+                // the hypermedia.
+                ->addActionsController('TmsOperationBundle:Offer')
+                // Build the hypermedia.
                 ->format()
                 // magical function which is able to format hypermedia
             ,
@@ -103,6 +111,7 @@ List all offers
 
 Retrieve one offer
 ------------------
+
 ```php
     /**
      * [GET] /offers/{id}
@@ -115,36 +124,38 @@ Retrieve one offer
         try {
             $view = $this->view(
             $this
-                ->get('tms.rest.formatter.hypermedia')
-                ->buildDoctrineSingleHypermediaFormatter(
+                ->get('tms_rest.formatter.factory')
+                ->create(
+                    'item',
                     $this->getRequest()->get('_route'),
                     $this->getRequest()->getRequestFormat(),
                     $id
                 )
-                // To build a single formatter, the CURRENT ROUTE, FORMAT
-                // and OBJECT ID are REQUIRED
                 ->setObjectManager(
                     $this->get('doctrine.orm.entity_manager'),
-                     'Foo\Entity\Offer' // Offer object class
+                     'Foo\Entity\Offer'
                 )
-                // Same parameters as for a collection
+                // Same parameters as for a collection.
+                // Example with related products of an offer.
                 ->addEmbedded(
                     'products', // embedded collection name
                     'api_offers_get_offer_products' // embedded collection route
-                ) // example with related products of an offer
+                )
+                // Example with related customers of an offer.
+                // addEmbedded() require 2 parameters :
+                // embedded collection name, embedded collection route.
                 ->addEmbedded(
                     'customers',
                     'api_offers_get_offer_customers'
-                ) // example with related customers of an offer
-                // addEmbedded() require 2 parameters :
-                // embedded collection name, embedded collection route
+                )
+                ->addActionsController('TmsOperationBundle:Offer')
                 ->format(),
                 Codes::HTTP_OK
             );
             
             $serializationContext = SerializationContext::create()
                 ->setGroups(array(
-                    HypermediaFormatter::SERIALIZER_CONTEXT_GROUP_SINGLE
+                    HypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ITEM
                 ))
             ;
             $view->setSerializationContext($serializationContext);
@@ -159,6 +170,37 @@ Retrieve one offer
         }
     }
 ```
+
+Retrieve the path info
+----------------------
+
+```php
+    /**
+     * [GET] /offers/info
+     * Get the info path of the API.
+     *
+     * @Get("/offers/info")
+     */
+    public function infoAction()
+    {
+        $view = $this->view(
+            $this
+                ->get('tms_rest.formatter.factory')
+                ->create(
+                    'info',
+                    $this->getRequest()->get('_route'),
+                    $this->getRequest()->getRequestFormat()
+                )
+                ->addActionsController('TmsOrderBundle:Order')
+                ->format(),
+            Codes::HTTP_OK
+        );
+
+        return $this->handleView($view);
+    }
+```
+
+Remember to place it before the GET one action in your controller because `/offers/info` match `/offers/{id}`.
 
 List all products related to an offer
 -------------------------------------
@@ -193,29 +235,30 @@ List all products related to an offer
         try {
             $view = $this->view(
             $this
-                ->get('tms.rest.formatter.factory')
-                ->buildDoctrineCollectionHypermediaFormatter(
+                ->get('tms_rest.formatter.factory')
+                ->create(
+                    'orm_collection',
                     $this->getRequest()->get('_route'),
                     $this->getRequest()->getRequestFormat()
                 )
                 ->setObjectManager(
                     $this->get('doctrine.orm.entity_manager'),
-                    'Foo\Entity\Product' // PRODUCT object class
-                    //(i.e. class of the related collection you need to retrieve)
+                    'Foo\Entity\Product' // Product object class.
+                    // (i.e. class of the related collection you need to retrieve)
                 )
+                // addItemRoute is required to generate links of the related collection;
+                // for simple collection the item route is guessed you don't need to use it.
                 ->addItemRoute(
                     'Foo\Entity\Offer' // Product object class
                     'api_products_get_product' // Route to show single product
                 )
-                // addItemRoute is required to generate links of the related collection;
-                // for simple collection the item route is guessed you don't need to use it
+                // This complex criteria means that the "offers" property of
+                // the Product entity must match the Offer id given in params.
                 ->setCriteria(array(
                     'offers' => array(
                         'id' => $id
                     )
                 ))
-                // This complex criteria means that the "offers" property of
-                // the Product entity must match the Offer id given in params
                 ->setSort(array(
                     $sort_field => $sort_order,
                 ))
