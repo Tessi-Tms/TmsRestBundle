@@ -35,8 +35,14 @@ services:
         tags:
             - { name: tms_rest.formatter.provider, id: mongodb_collection }
 
-    tms_rest.formatter.provider.inquire:
-        class: Tms\Bundle\RestBundle\Formatter\Provider\InquireHypermediaFormatterProvider
-        arguments: [@router, @tms_rest.criteria_builder, @jms_serializer]
+    tms_rest.formatter.provider.info:
+        class: Tms\Bundle\RestBundle\Formatter\Provider\InfoHypermediaFormatterProvider
+        arguments:
+            - @router
+            - @tms_rest.criteria_builder
+            - @jms_serializer
+            - @fos_rest.routing.loader.controller
+            - @tms_rest.request.param_reader_provider
+            - @tms_rest.request.provider
         tags:
-            - { name: tms_rest.formatter.provider, id: inquire }
+            - { name: tms_rest.formatter.provider, id: info }
