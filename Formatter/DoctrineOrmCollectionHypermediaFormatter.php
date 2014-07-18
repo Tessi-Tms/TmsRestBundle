@@ -14,74 +14,60 @@ class DoctrineOrmCollectionHypermediaFormatter extends AbstractDoctrineCollectio
     /**
      * {@inheritdoc }
      */
-    protected function addSortToQueryBuilder($queryBuilder)
+    protected function addSortToQueryBuilder()
     {
-        foreach($this->sort as $field => $order) {
-            $queryBuilder->addOrderBy(sprintf('%s.%s', $this->getAliasName(), $field), $order);
+        foreach ($this->sort as $field => $order) {
+            $this->queryBuilder->addOrderBy(sprintf('%s.%s', $this->getAliasName(), $field), $order);
         }
-
-        return $queryBuilder;
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function addPaginationToQueryBuilder($queryBuilder)
+    protected function addPaginationToQueryBuilder()
     {
-        $queryBuilder->setFirstResult($this->computeOffsetWithPage());
-        $queryBuilder->setMaxResults($this->limit);
+        $this->queryBuilder->setFirstResult($this->computeOffsetWithPage());
+        $this->queryBuilder->setMaxResults($this->limit);
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function addCriteriaToQueryBuilder($queryBuilder)
+    protected function addCriteriaToQueryBuilder()
     {
-        if(!$this->criteria) {
-            return $queryBuilder;
+        if (!$this->criteria) {
+            return;
         }
 
-        foreach($this->criteria as $column => $value) {
-            if(is_array($value)) {
-                foreach($value as $k => $v) {
-                    $queryBuilder->join(sprintf('%s.%s', $this->getAliasName(), $column), $column);
-                    $queryBuilder->andWhere(sprintf('%s.%s = :%s', $column, $k, $column));
-                    $queryBuilder->setParameter($column, $v);
+        foreach ($this->criteria as $column => $value) {
+            if (is_array($value)) {
+                foreach ($value as $k => $v) {
+                    $this->queryBuilder->join(sprintf('%s.%s', $this->getAliasName(), $column), $column);
+                    $this->queryBuilder->andWhere(sprintf('%s.%s = :%s', $column, $k, $column));
+                    $this->queryBuilder->setParameter($column, $v);
                 }
             } else {
-                $queryBuilder->andWhere(sprintf('%s.%s = :%s', $this->getAliasName(), $column, $column));
-                $queryBuilder->setParameter($column, $value);
+                $this->queryBuilder->andWhere(sprintf('%s.%s = :%s', $this->getAliasName(), $column, $column));
+                $this->queryBuilder->setParameter($column, $value);
             }
         }
-
-        return $queryBuilder;
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function prepareCountQueryBuilder($namespace = null)
+    protected function prepareCountQueryBuilder()
     {
-        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
+        $queryBuilder = clone $this->queryBuilder;
 
-        $queryBuilder = isset($this->queryBuilder) ? $this->queryBuilder : $this
-            ->objectManager
-            ->getRepository($namespace)
-            ->createQueryBuilder($this->getAliasName())
-        ;
-
-        $queryBuilder->select(sprintf('COUNT(%s.id)', $this->getAliasName()));
-
-        return $queryBuilder;
+        return $queryBuilder->select(sprintf('COUNT(%s.id)', $this->getAliasName()));
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function countObjects($namespace = null)
+    protected function countObjects()
     {
-        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-
-        return intval($this->prepareQueryCount($namespace)->getSingleScalarResult());
+        return intval($this->prepareQueryCount()->getSingleScalarResult());
     }
 }

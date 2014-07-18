@@ -12,70 +12,55 @@ class DoctrineMongoDbCollectionHypermediaFormatter extends AbstractDoctrineColle
     /**
      * {@inheritdoc }
      */
-    protected function addSortToQueryBuilder($queryBuilder)
+    protected function addSortToQueryBuilder()
     {
-        $queryBuilder->sort($this->sort);
-
-        return $queryBuilder;
+        $this->queryBuilder->sort($this->sort);
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function addPaginationToQueryBuilder($queryBuilder)
+    protected function addPaginationToQueryBuilder()
     {
-        $queryBuilder->skip($this->computeOffsetWithPage());
-        $queryBuilder->limit($this->limit);
+        $this->queryBuilder->skip($this->computeOffsetWithPage());
+        $this->queryBuilder->limit($this->limit);
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function addCriteriaToQueryBuilder($queryBuilder)
+    protected function addCriteriaToQueryBuilder()
     {
         if (!$this->criteria) {
-            return $queryBuilder;
+            return;
         }
 
         $class = new \ReflectionClass($queryBuilder);
 
         if ($class->hasMethod('match')) {
             foreach ($this->criteria as $criterionName => $criterionValue) {
-                $queryBuilder->match($criterionName, $criterionValue);
+                $this->queryBuilder->match($criterionName, $criterionValue);
             }
         } else {
             foreach ($this->criteria as $criterionName => $criterionValue) {
-                $queryBuilder->field($criterionName)->equals($criterionValue);
+                $this->queryBuilder->field($criterionName)->equals($criterionValue);
             }
         }
-
-        return $queryBuilder;
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function prepareCountQueryBuilder($namespace = null)
+    protected function prepareCountQueryBuilder()
     {
-        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-
-        $queryBuilder = $this
-            ->objectManager
-            ->getRepository($this->objectNamespace)
-            ->createQueryBuilder()
-        ;
-        $queryBuilder = $this->addCriteriaToQueryBuilder($queryBuilder);
-
-        return $queryBuilder;
+        return $this->queryBuilder;
     }
 
     /**
      * {@inheritdoc }
      */
-    protected function countObjects($namespace = null)
+    protected function countObjects()
     {
-        $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-
-        return $this->prepareCountQueryBuilder($namespace)->getQuery()->execute()->count();
+        return $this->prepareCountQueryBuilder()->getQuery()->execute()->count();
     }
 }
