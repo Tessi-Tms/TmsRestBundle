@@ -267,30 +267,36 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     {
         $itemActions = array();
 
-        foreach ($actions as $action) {
-            $href = $action['href'];
+        foreach ($actions as $actionName => $actionMethods) {
+            foreach ($actionMethods as $action) {
+                $href = $action['href'];
 
-            if (isset($this->objectPK)) {
-                $classIdentifier = $this->objectPK;
-            } else {
-                $classIdentifier = $this->getClassIdentifier(get_class($object));
+                if (isset($this->objectPK)) {
+                    $classIdentifier = $this->objectPK;
+                } else {
+                    $classIdentifier = $this->getClassIdentifier(get_class($object));
+                }
+
+                $id = sprintf('{%s}', $classIdentifier);
+
+                if (strpos($href, $id) === false) {
+                    continue;
+                }
+
+                $getMethod = sprintf("get%s", ucfirst($classIdentifier));
+
+                $action['href'] = str_replace(
+                    array($id, '{_format}'),
+                    array($object->$getMethod(), $this->format),
+                    $href
+                );
+
+                if (!isset($itemActions[$actionName])) {
+                    $itemActions[$actionName] = array();
+                }
+
+                $itemActions[$actionName][] = $action;
             }
-
-            $id = sprintf('{%s}', $classIdentifier);
-
-            if (strpos($href, $id) === false) {
-                continue;
-            }
-
-            $getMethod = sprintf("get%s", ucfirst($classIdentifier));
-
-            $action['href'] = str_replace(
-                array($id, '{_format}'),
-                array($object->$getMethod(), $this->format),
-                $href
-            );
-
-            $itemActions[] = $action;
         }
 
         return $itemActions;

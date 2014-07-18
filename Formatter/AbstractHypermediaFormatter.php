@@ -147,10 +147,14 @@ abstract class AbstractHypermediaFormatter
         array $optionalParams = array()
     )
     {
-        $this->actions[] = array(
+        if (!isset($this->actions[$name])) {
+            $this->actions[$name] = array();
+        }
+
+        $this->actions[$name][] = array(
             'rel' => $name,
-            'href' => $url,
             'method' => $method,
+            'href' => $url,
             'requiredParams' => $requiredParams,
             'optionalParams' => $optionalParams
         );
@@ -232,10 +236,14 @@ abstract class AbstractHypermediaFormatter
                         }
 
                         foreach ($httpMethods as $httpMethod) {
-                            $actions[] = array(
+                            if (!isset($actions[$actionName])) {
+                                $actions[$actionName] = array();
+                            }
+
+                            $actions[$actionName][] = array(
                                 'rel' => $actionName,
-                                'href' => $url,
                                 'method' => $httpMethod,
+                                'href' => $url,
                                 'requiredParams' => $requiredParams,
                                 'optionalParams' => $optionalParams
                             );
