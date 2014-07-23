@@ -424,17 +424,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @param array  $arguments
      * @param string $namespace
      */
-    public function initQueryBuilder($methodName, $aliasName, array $arguments = null, $namespace = null)
+    public function initQueryBuilder($methodName, $aliasName, array $arguments = array(), $namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
         $repository = $this->queryBuilder = $this
             ->objectManager
             ->getRepository($namespace)
         ;
-
-        if(is_null($arguments)) {
-            $arguments = array();
-        }
 
         $this->queryBuilder = call_user_func_array(
             array($repository, $methodName),
