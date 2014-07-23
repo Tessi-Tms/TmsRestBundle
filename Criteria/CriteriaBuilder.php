@@ -72,14 +72,15 @@ class CriteriaBuilder
             }
 
             if (is_array($value)) {
-                foreach ($value as $k => $v) {
-                    if(is_array($v)) {
-                        unset($criteria[$v]);
-                        $this->cleanCriteriaValue($v);
-                    }
-                    $criteria[$k] = $v;
-                }
-                unset($criteria[$name]);
+                $criteria[$name] = $this->cleanCriteriaValue($value);
+//                foreach ($value as $k => $v) {
+//                    if(is_array($v)) {
+//                        unset($criteria[$v]);
+//                        $this->cleanCriteriaValue($v);
+//                    }
+//                    $criteria[$k] = $v;
+//                }
+//                unset($criteria[$name]);
             }
         }
 
