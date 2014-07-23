@@ -432,6 +432,10 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             ->getRepository($namespace)
         ;
 
+        if(is_null($arguments)) {
+            $arguments = array();
+        }
+
         $this->queryBuilder = call_user_func_array(
             array($repository, $methodName),
             $arguments
