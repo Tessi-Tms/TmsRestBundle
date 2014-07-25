@@ -35,7 +35,7 @@ class DoctrineMongoDbCollectionHypermediaFormatter extends AbstractDoctrineColle
             return;
         }
 
-        $class = new \ReflectionClass($queryBuilder);
+        $class = new \ReflectionClass($this->queryBuilder);
 
         if ($class->hasMethod('match')) {
             foreach ($this->criteria as $criterionName => $criterionValue) {
