@@ -21,7 +21,7 @@ Usually yo have three different needs :
 All the magical is in tms.rest.formatter.hypermedia service.
 
 This service is able to :
-* build collection/related objects/single formatter
+* build collection/related-objects/item formatter
 * set the required object manager
 * set all optionnal parameters
 * format object in hypermedia mode
@@ -40,8 +40,7 @@ List all offers
      * @QueryParam(name="limit", requirements="\d+", strict=true, nullable=true, description="(optional) Pagination limit")
      * @QueryParam(name="offset", requirements="\d+", strict=true, nullable=true, description="(optional) Pagination offset")
      * @QueryParam(name="page", requirements="\d+", strict=true, nullable=true, description="(optional) Page number")
-     * @QueryParam(name="sort_field", nullable=true, description="(optional) Sort field")
-     * @QueryParam(name="sort_order", nullable=true, description="(optional) Sort order")
+     * @QueryParam(name="sort", array=true, nullable=true, description="(optional) Sort")
      * 
      * @param string $name
      * @param string $reference
@@ -49,10 +48,17 @@ List all offers
      * @param string $limit
      * @param string $offset
      * @param string $page
-     * @param string $sort_field
-     * @param string $sort_order
+     * @param string $sort
      */
-    public function getOffersAction($name = null, $reference = null, $status = null, $limit = null, $offset = null, $page = null, $sort_field = null, $sort_order = null)
+    public function getOffersAction(
+        $name      = null,
+        $reference = null,
+        $status    = null,
+        $limit     = null,
+        $offset    = null,
+        $page      = null,
+        $sort      = null
+    )
     {
         $view = $this->view(
             $this
@@ -72,6 +78,8 @@ List all offers
                     $this->get('doctrine.orm.entity_manager'),
                     'Foo\Entity\Offer' // Offer object class
                 )
+                // You can also init the query builder with a method from the object repository which have to return a QueryBuilder (for example to pre-filter available offers)
+                ->initQueryBuilder('findActiveOffersQueryBuilder', 'offer')
                 // The criteria of the query.                
                 ->setCriteria(array(
                     'name'      => $name,
@@ -82,10 +90,7 @@ List all offers
                 // are optionnal parameters : if not given they are
                 // guessed by the default configuration.
                 ->setLimit($limit)
-                ->setSort(array(
-                    'reference' => 'desc',
-                    'id'        => 'asc'
-                ))
+                ->setSort($sort) // array('reference' => 'asc', 'id' => 'desc') for instance
                 ->setOffset($offset)
                 ->setPage($page)
                 // Add a controller to automaticaly add its actions to
@@ -142,8 +147,7 @@ Retrieve one offer
                     'api_offers_get_offer_products' // embedded collection route
                 )
                 // Example with related customers of an offer.
-                // addEmbedded() require 2 parameters :
-                // embedded collection name, embedded collection route.
+                // addEmbedded() require 2 parameters : embedded collection relation name, embedded collection route
                 ->addEmbedded(
                     'customers',
                     'api_offers_get_offer_customers'
@@ -213,23 +217,20 @@ List all products related to an offer
      * @QueryParam(name="limit", requirements="\d+", strict=true, nullable=true, description="(optional) Pagination limit")
      * @QueryParam(name="offset", requirements="\d+", strict=true, nullable=true, description="(optional) Pagination offset")
      * @QueryParam(name="page", requirements="\d+", strict=true, nullable=true, description="(optional) Page number")
-     * @QueryParam(name="sort_field", nullable=true, description="(optional) Sort field")
-     * @QueryParam(name="sort_order", nullable=true, description="(optional) Sort order")
+     * @QueryParam(name="sort", array=true, nullable=true, description="(optional) Sort")
      * 
-     * @param string $id
+     * @param string  $id
      * @param integer $limit
      * @param integer $offset
      * @param integer $page
-     * @param string $sort_field
-     * @param string $sort_order
+     * @param string  $sort
      */
     public function getOfferProductsAction(
         $id,
         $limit      = null,
         $offset     = null,
         $page       = null,
-        $sort_field = null,
-        $sort_order = null
+        $sort       = null
     )
     {
         try {
@@ -259,9 +260,7 @@ List all products related to an offer
                         'id' => $id
                     )
                 ))
-                ->setSort(array(
-                    $sort_field => $sort_order,
-                ))
+                ->setSort($sort)
                 ->setLimit($limit)
                 ->setOffset($offset)
                 ->setPage($page)
@@ -289,10 +288,10 @@ List all products related to an offer
 
 Two contexts of serialization are available :
 * HypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION
-* HypermediaFormatter::SERIALIZER_CONTEXT_GROUP_SINGLE
+* HypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ITEM
 
 Theses contexts are useful to define which fields of an object will be
-serialized in the choosen context (single/collection).
+serialized in the choosen context (item/collection).
 
 You can define them in serializer folder:
 
@@ -302,21 +301,19 @@ Tms\Bundle\OperationBundle\Entity\Offer:
     properties:
         id:
             expose: true
-            groups: [list, details]
-            # the ID property will be render in hypermedia
-            # in "list" AND "details" serialization context
+            groups: [tms_rest.collection, tms_rest.item]
+            # the ID property will be render in hypermedia mode
+            # in "collection" AND "item" serialization context
 
         name:
             expose: true
-            groups: [list]
+            groups: [tms_rest.item]
             # the NAME property will be render in hypermedia
-            # ONLY in "list" serialization context
+            # ONLY in "item" serialization context
 ```
 
-NB : "list" / "details" will be replaced respectively
-by "embedded" / "single" shortly
 
-The defaults values are available in REST Bundle Configuration.php file :
+Defaults values are available in REST Bundle Configuration.php file :
 ```php
 namespace Tms\Bundle\RestBundle\DependencyInjection;
 // ...
@@ -438,15 +435,14 @@ will return these results:
 * /api/rest/offers.json   => 50 items from 0 to 50
 * /api/rest/offers.json?offset=30&limit=100  => 100 items from 30 to 130
 * /api/rest/offers.json?limit=400  => 200 items from 0 to 200 (limit max=200 in our previous configuration)
-* /api/rest/offers.json?sort_field=reference  => 50 items ordered by REFERENCE column ASC
-* api/rest/offers.json?sort_order=desc  => 50 items ordered by ID column DESC
+* /api/rest/offers.json?sort[reference]=asc  => 50 items ordered by REFERENCE column ASC
+* api/rest/offers.json?sort[order]=desc&sort[reference]=asc  => 50 items ordered by ORDER column DESC and then by REFERENCE column ASC
 
-All overloadable pagination parameters
+Overloadable pagination parameters
 --------------------------------------
 
-* limit
-* offset
-* page
-* sort_field
-* sort_order
+* limit  (integer)
+* offset (integer)
+* page   (integer)
+* sort   (array)
 

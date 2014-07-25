@@ -75,7 +75,7 @@ class CriteriaBuilder
                 $criteria[$name] = $this->cleanCriteriaValue($value);
             }
         }
-        
+
         return $criteria;
     }
 
