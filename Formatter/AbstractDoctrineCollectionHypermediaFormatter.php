@@ -85,12 +85,12 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     {
         // Set default values if some parameters are missing
         $this->cleanAndSetQueryParams(array(
-            'criteria' => $this->criteria,
             'limit'    => $this->limit,
             'sort'     => $this->sort,
             'page'     => $this->page,
             'offset'   => $this->offset
         ));
+        $this->cleanCriteria($this->criteria);
 
         // Init query builder with criteria
         $this->initCriteriaQueryBuilder($namespace);
@@ -134,6 +134,19 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         ;
 
         $this->addCriteriaToQueryBuilder();
+    }
+
+    /**
+     * Clean criteria param
+     *
+     * @param array $criteria
+     */
+    protected function cleanCriteria(array $criteria = null)
+    {
+        $this->criteria = $this
+            ->criteriaBuilder
+            ->cleanCriteriaValue($criteria)
+        ;
     }
 
     /**
@@ -498,7 +511,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     {
         $this->sort = $this
             ->criteriaBuilder
-            ->cleanSortValue($sort)
+            ->initDefaultSortValue($sort)
         ;
         
         return $this;

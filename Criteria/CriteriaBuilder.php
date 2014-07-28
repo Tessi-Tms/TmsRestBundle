@@ -104,33 +104,6 @@ class CriteriaBuilder
     }
 
     /**
-     * Clean the sort value
-     *
-     * @param array $sort
-     * @return array
-     */
-    public function cleanSortValue($sort = null)
-    {
-        if(is_null($sort)) {
-            return array();
-        }
-
-        foreach ($sort as $name => $value) {
-            if (null === $value || $value === array()) {
-                unset($sort[$name]);
-
-                continue;
-            }
-
-            if (is_array($value)) {
-                $sort[$name] = $this->cleanSortValue($value);
-            }
-        }
-        
-        return $sort;
-    }
-
-    /**
      * Define the sort values according to the original value and the defined configuration
      *
      * @param mixed $originalValue
