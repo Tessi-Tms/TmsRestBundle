@@ -159,7 +159,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         foreach ($params as $name => $value) {
             if (is_null($value)) {
                 $defineMethod = sprintf("initDefault%sValue", ucfirst($name));
-                if (!method_exists($this, $defineMethod)) {
+                if (!method_exists($this->criteriaBuilder, $defineMethod)) {
                     throw new \Exception(sprintf("No %s method find to clean %s param.", $defineMethod, $name));
                 }
     
