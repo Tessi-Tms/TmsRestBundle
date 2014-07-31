@@ -132,23 +132,39 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      * @param string  $routeName
      * @param Object  $object
      * @param boolean $isEmbedded
+     * @param array   $parameters
      * 
      * @return Collection
      */
-    protected function generateLink($routeName, $object, $isEmbedded = false)
+    protected function generateLink($routeName, $object, $isEmbedded = false, array $parameters = array())
     {
         $classIdentifier = $this->getClassIdentifier(get_class($object));
-        if(!$isEmbedded && isset($this->objectPK)) {
+        
+        if (!$isEmbedded && isset($this->objectPK)) {
             $classIdentifier = $this->objectPK;
         }
+
         $getMethod = sprintf("get%s", ucfirst($classIdentifier));
+        $routeParameters = array(
+            '_format' => $this->format,
+            $classIdentifier => $object->$getMethod(),
+        );
+
+        foreach ($parameters as $key => $parameter) {
+            $parameterPath = explode('.', $parameter);
+            $parameterValue = $object;
+
+            foreach ($parameterPath as $path) {
+                $getParameterMethod = sprintf("get%s", ucfirst($path));
+                $parameterValue = $parameterValue->$getParameterMethod();
+            }
+
+            $routeParameters[$key] = $parameterValue;
+        }
 
         return $this->router->generate(
             $routeName,
-            array(
-                '_format' => $this->format,
-                $classIdentifier => $object->$getMethod(),
-            ),
+            $routeParameters,
             true
         );
     }
@@ -183,20 +199,22 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      *
      * @param string $embeddedName
      * @param string $embeddedCollectionRoute
+     * @param array  $parameters
      * 
      * @return $this
      */
-    public function addEmbedded($embeddedName, $embeddedCollectionRoute)
+    public function addEmbedded($embeddedName, $embeddedCollectionRoute, array $parameters = array())
     {
         $this->getObjectsFromRepository();
 
-        if($this->isEmbeddedMappedBySingleEntity($embeddedName)) {
+        if($this->isEmbeddedMappedBySingleEntity($embeddedName) || !empty($parameters)) {
             $this->embeddeds[$embeddedName] = array(
-                'rel'   => 'embedded',
-                'href'  => $this->generateLink(
+                'rel'  => 'embedded',
+                'href' => $this->generateLink(
                     $embeddedCollectionRoute,
                     $this->object,
-                    1
+                    true,
+                    $parameters
                 )
             );
         }
