@@ -41,10 +41,16 @@ class DoctrineOrmCollectionHypermediaFormatter extends AbstractDoctrineCollectio
 
         foreach ($this->criteria as $column => $value) {
             if (is_array($value)) {
-                foreach ($value as $k => $v) {
-                    $this->queryBuilder->join(sprintf('%s.%s', $this->getAliasName(), $column), $column);
-                    $this->queryBuilder->andWhere(sprintf('%s.%s = :%s', $column, $k, $column));
-                    $this->queryBuilder->setParameter($column, $v);
+                // If the column is an association
+                if (in_array($column, array_keys($this->getClassMetadata()->associationMappings))) {
+                    foreach ($value as $k => $v) {
+                        $this->queryBuilder->join(sprintf('%s.%s', $this->getAliasName(), $column), $column);
+                        $this->queryBuilder->andWhere(sprintf('%s.%s = :%s', $column, $k, $column));
+                        $this->queryBuilder->setParameter($column, $v);
+                    }
+                } else {
+                    $this->queryBuilder->andWhere(sprintf('%s.%s IN (:%s)', $this->getAliasName(), $column, $column));
+                    $this->queryBuilder->setParameter($column, $value);
                 }
             } else {
                 $this->queryBuilder->andWhere(sprintf('%s.%s = :%s', $this->getAliasName(), $column, $column));

@@ -18,11 +18,11 @@ use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
 use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
 
-abstract class AbstractHypermediaFormatter
+abstract class AbstractHypermediaFormatter implements FormatterInterface
 {
-    const SERIALIZER_CONTEXT_GROUP_ITEM = 'tms_rest.item';
+    const SERIALIZER_CONTEXT_GROUP_ITEM       = 'tms_rest.item';
     const SERIALIZER_CONTEXT_GROUP_COLLECTION = 'tms_rest.collection';
-    const SERIALIZER_CONTEXT_GROUP_NAME = 'serializerContextGroup';
+    const SERIALIZER_CONTEXT_GROUP_NAME       = 'serializerContextGroup';
 
     // Services
     protected $serializer;
@@ -30,6 +30,7 @@ abstract class AbstractHypermediaFormatter
     protected $criteriaBuilder;
     protected $routeLoader;
     protected $paramReaderProvider;
+    protected $requestProvider;
 
     // Formatters default attributes
     protected $currentRouteName;
@@ -70,35 +71,32 @@ abstract class AbstractHypermediaFormatter
     }
 
     /**
-     * Format raw data to have hypermedia data in output
-     *
-     * @return array
+     * {@inheritdoc }
      */
     public function format()
     {
-        $formatting = array();
+        $output = array();
 
-        $metadata = $this->formatMetadata();
-        if (null !== $metadata) {
-            $formatting['metadata'] = $metadata;
+        self::addFormatedData($output, 'metadata', $this->formatMetadata());
+        self::addFormatedData($output, 'data', $this->formatData());
+        self::addFormatedData($output, 'links', $this->formatLinks());
+        self::addFormatedData($output, 'actions', $this->formatActions());
+
+        return $output;
+    }
+
+    /**
+     * Add formated data
+     *
+     * @param array  $output
+     * @param string $dataName
+     * @param mixed  $dataValue
+     */
+    protected static function addFormatedData(& $output, $dataName, $dataValue = null)
+    {
+        if (null !== $dataValue) {
+            $output[$dataName] = $dataValue;
         }
-
-        $data = $this->formatData();
-        if (null !== $data) {
-            $formatting['data'] = $data;
-        }
-
-        $links = $this->formatLinks();
-        if (null !== $links) {
-            $formatting['links'] = $links;
-        }
-
-        $actions = $this->formatActions();
-        if (null !== $actions) {
-            $formatting['actions'] = $actions;
-        }
-
-        return $formatting;
     }
 
     /**
@@ -131,12 +129,11 @@ abstract class AbstractHypermediaFormatter
     /**
      * Set an action.
      *
-     * @param string $name           The identifier name.
-     * @param string $method         The HTTP method.
-     * @param string $url            The url.
-     * @param array  $requiredParams The required parameters.
-     * @param array  $optionalParams The optional parameters.
-     *
+     * @param  string $name           The identifier name.
+     * @param  string $method         The HTTP method.
+     * @param  string $url            The url.
+     * @param  array  $requiredParams The required parameters.
+     * @param  array  $optionalParams The optional parameters.
      * @return AbstractHypermediaFormatter This.
      */
     public function addAction(
@@ -152,9 +149,9 @@ abstract class AbstractHypermediaFormatter
         }
 
         $this->actions[$name][] = array(
-            'rel' => $name,
-            'method' => $method,
-            'href' => $url,
+            'rel'            => $name,
+            'method'         => $method,
+            'href'           => $url,
             'requiredParams' => $requiredParams,
             'optionalParams' => $optionalParams
         );
@@ -178,8 +175,7 @@ abstract class AbstractHypermediaFormatter
     /**
      * Add a controller containing related actions
      *
-     * @param object $controller A controller class.
-     *
+     * @param  object $controller A controller class.
      * @return AbstractHypermediaFormatter This.
      */
     public function addActionsController($controller)
@@ -259,8 +255,7 @@ abstract class AbstractHypermediaFormatter
     /**
      * Retrieve the path of a route.
      *
-     * @param Route $route The route.
-     *
+     * @param  Route $route The route.
      * @return string|null The path or null if the route should not be used.
      */
     protected function retrieveRoutePath(Route $route)

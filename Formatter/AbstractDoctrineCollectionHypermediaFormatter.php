@@ -13,17 +13,27 @@ namespace Tms\Bundle\RestBundle\Formatter;
 abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
     // Query params
-    protected $criteria = null;
-    protected $limit = null;
-    protected $sort = null;
-    protected $page = null;
-    protected $offset = null;
+    protected $criteria   = null;
+    protected $limit      = null;
+    protected $sort       = null;
+    protected $page       = null;
+    protected $offset     = null;
     protected $totalCount = null;
 
     protected $queryBuilder = null;
-    protected $aliasName = null;
-    protected $objects;
-    protected $itemRoutes = null;
+    protected $aliasName    = null;
+    protected $objects      = array();
+    protected $itemRoutes   = null;
+
+    /**
+     * Clean criteria
+     *
+     * @return array
+     */
+    public function getCriteria()
+    {
+        return $this->criteria;
+    }
 
     /**
      * Format metadata into a given layout for hypermedia
@@ -41,7 +51,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 'limit'                  => $this->limit,
                 'offset'                 => $this->offset
             ),
-            $this->cleanCriteriaForLinks()
+            $this->getCriteria()
         );
     }
 
@@ -59,8 +69,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             $data[] = array(
                 'metadata' => array(
                     'type' => $this->getType(),
-                    AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_NAME
-                    => AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ITEM
+                    AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_NAME => AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ITEM
                 ),
                 'data'  => $object,
                 'links' => array(
@@ -90,7 +99,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             'page'     => $this->page,
             'offset'   => $this->offset
         ));
-        $this->cleanCriteria($this->criteria);
 
         // Init query builder with criteria
         $this->initCriteriaQueryBuilder($namespace);
@@ -137,19 +145,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     * Clean criteria param
-     *
-     * @param array $criteria
-     */
-    protected function cleanCriteria(array $criteria = null)
-    {
-        $this->criteria = $this
-            ->criteriaBuilder
-            ->cleanCriteriaValue($criteria)
-        ;
-    }
-
-    /**
      * Define all params with configuration if some are not given
      *
      * @param array $parameters
@@ -162,7 +157,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 if (!method_exists($this->criteriaBuilder, $defineMethod)) {
                     throw new \Exception(sprintf("No %s method find to clean %s param.", $defineMethod, $name));
                 }
-    
+
                 $this->$name = $this
                     ->criteriaBuilder
                     ->$defineMethod()
@@ -191,7 +186,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                             'limit'     => $this->limit,
                             'offset'    => $this->offset
                         ),
-                        $this->cleanCriteriaForLinks()
+                        $this->getCriteria()
                     ),
                     true
                 )
@@ -213,27 +208,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 'href' => $this->generateLastPageLink()
             ),
         );
-    }
-
-    /**
-     * Clean criteria to simplify complex array criteria into simple array
-     *
-     * @return array
-     */
-    protected function cleanCriteriaForLinks()
-    {
-        $cleanedCriteria = array();
-        foreach($this->criteria as $column => $value) {
-            if(is_array($value)) {
-                foreach($value as $k => $v) {
-                    $cleanedCriteria[$k] = $v;
-                }
-            } else {
-                $cleanedCriteria[$column] = $value;
-            }
-        }
-
-        return $cleanedCriteria;
     }
 
     /**
@@ -375,7 +349,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                     'limit'     => $this->limit,
                     'offset'    => $this->offset
                 ),
-                $this->cleanCriteriaForLinks()
+                $this->getCriteria()
             ),
             true
         );

@@ -22,10 +22,10 @@ use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
 
 class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
-    protected $objectPK = 'id';
+    protected $objectPK      = 'id';
     protected $objectPKValue = null;
-    protected $object = null;
-    protected $embeddeds = null;
+    protected $object        = null;
+    protected $embeddeds     = null;
 
     /**
      * Constructor

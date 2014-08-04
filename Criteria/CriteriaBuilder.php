@@ -13,9 +13,9 @@ namespace Tms\Bundle\RestBundle\Criteria;
 
 class CriteriaBuilder
 {
-    const ORDER_ASC = 'asc';
+    const ORDER_ASC  = 'asc';
     const ORDER_DESC = 'desc';
-    
+
     /**
      * @var array
      */
@@ -30,7 +30,6 @@ class CriteriaBuilder
     {
         $this->configuration = $configuration;
     }
-
 
     /**
      * Guess configuration by Route
