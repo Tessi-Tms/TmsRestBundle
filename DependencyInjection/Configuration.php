@@ -94,7 +94,7 @@ class Configuration implements ConfigurationInterface
                                     ->arrayNode('offset')
                                         ->addDefaultsIfNotSet()
                                         ->children()
-                                            ->integerNode('default')->defaultValue(0)->min(1)->end()
+                                            ->integerNode('default')->defaultValue(0)->end()
                                         ->end()
                                     ->end()
                                     ->arrayNode('page')
