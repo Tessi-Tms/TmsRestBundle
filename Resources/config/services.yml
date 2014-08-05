@@ -8,6 +8,10 @@ parameters:
     tms_rest.request.provider.class:              Tms\Bundle\RestBundle\Request\RequestProvider
 
 services:
+    tms_rest.configuration_param_fetcher:
+        class: Tms\Bundle\RestBundle\ConfigurationParamFetcher
+        arguments: [%tms_rest.configuration%]
+
     tms_rest.criteria_builder:
         class: %tms_rest.criteria_builder.class%
         arguments: [%tms_rest.configuration%]
