@@ -92,14 +92,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function getObjectsFromRepository($namespace = null)
     {
-        // Set default values if some parameters are missing
-        $this->cleanAndSetQueryParams(array(
-            'limit'    => $this->limit,
-            'sort'     => $this->sort,
-            'page'     => $this->page,
-            'offset'   => $this->offset
-        ));
-
         // Init query builder with criteria
         $this->initCriteriaQueryBuilder($namespace);
 
@@ -142,28 +134,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         ;
 
         $this->addCriteriaToQueryBuilder();
-    }
-
-    /**
-     * Define all params with configuration if some are not given
-     *
-     * @param array $parameters
-     */
-    protected function cleanAndSetQueryParams(array $params)
-    {
-        foreach ($params as $name => $value) {
-            if (is_null($value)) {
-                $defineMethod = sprintf("initDefault%sValue", ucfirst($name));
-                if (!method_exists($this->criteriaBuilder, $defineMethod)) {
-                    throw new \Exception(sprintf("No %s method find to clean %s param.", $defineMethod, $name));
-                }
-
-                $this->$name = $this
-                    ->criteriaBuilder
-                    ->$defineMethod()
-                ;
-            }
-        }
     }
 
     /**
@@ -451,12 +421,36 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setCriteria($criteria = null)
     {
-        $this->criteria = $this
-            ->criteriaBuilder
-            ->cleanCriteriaValue($criteria)
-        ;
+        $this->criteria = self::cleanCriteria($criteria);
 
         return $this;
+    }
+
+    /**
+     * Clean the criteria value
+     *
+     * @param array $criteria
+     * @return array
+     */
+    public function cleanCriteria($criteria = null)
+    {
+        if(is_null($criteria)) {
+            return array();
+        }
+
+        foreach ($criteria as $name => $value) {
+            if (null === $value || $value === array()) {
+                unset($criteria[$name]);
+
+                continue;
+            }
+
+            if (is_array($value)) {
+                $criteria[$name] = self::cleanCriteria($value);
+            }
+        }
+
+        return $criteria;
     }
 
     /**
@@ -467,11 +461,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setLimit($limit = null)
     {
-        $this->limit = $this
-            ->criteriaBuilder
-            ->initDefaultLimitValue($limit)
-        ;
-        
+        $this->limit = $limit;
+
         return $this;
     }
 
@@ -483,11 +474,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setSort($sort = null)
     {
-        $this->sort = $this
-            ->criteriaBuilder
-            ->initDefaultSortValue($sort)
-        ;
-        
+        $this->sort = $sort;
+
         return $this;
     }
 
@@ -499,11 +487,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setPage($page = null)
     {
-        $this->page = $this
-            ->criteriaBuilder
-            ->initDefaultPageValue($page)
-        ;
-        
+        $this->page = $page;
+
         return $this;
     }
 
@@ -515,11 +500,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setOffset($offset = null)
     {
-        $this->offset = $this
-            ->criteriaBuilder
-            ->initDefaultOffsetValue($offset)
-        ;
-        
+        $this->offset = $offset;
+
         return $this;
     }
 

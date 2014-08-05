@@ -32,7 +32,6 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      */
     public function __construct(
         Router $router,
-        CriteriaBuilder $criteriaBuilder,
         Serializer $serializer,
         LoaderInterface $routeLoader,
         ParamReaderProviderInterface $paramReaderProvider,
@@ -48,7 +47,6 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
 
         parent::__construct(
             $router,
-            $criteriaBuilder,
             $serializer,
             $routeLoader,
             $paramReaderProvider,
