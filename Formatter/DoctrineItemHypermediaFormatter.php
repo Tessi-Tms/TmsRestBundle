@@ -15,8 +15,6 @@ use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\Router;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use JMS\Serializer\Serializer;
-use JMS\Serializer\SerializationContext;
-use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
 use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
 
