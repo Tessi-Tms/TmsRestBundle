@@ -10,6 +10,12 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
+use Symfony\Component\Routing\Router;
+use Symfony\Component\Config\Loader\LoaderInterface;
+use JMS\Serializer\Serializer;
+use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
+use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
+
 abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
     // Query params
@@ -20,10 +26,51 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected $offset     = null;
     protected $totalCount = null;
 
+    // Caca pour caca
+    protected $routeParameters = array();
+
     protected $queryBuilder = null;
     protected $aliasName    = null;
     protected $objects      = array();
     protected $itemRoutes   = null;
+
+
+    /**
+     * Constructor
+     */
+    public function __construct(
+        Router $router,
+        Serializer $serializer,
+        LoaderInterface $routeLoader,
+        ParamReaderProviderInterface $paramReaderProvider,
+        RequestProviderInterface $requestProvider,
+        $currentRouteName,
+        $format,
+        $routeParameters = array()
+    )
+    {
+        $this->routeParameters = $routeParameters;
+
+        parent::__construct(
+            $router,
+            $serializer,
+            $routeLoader,
+            $paramReaderProvider,
+            $requestProvider,
+            $currentRouteName,
+            $format
+        );
+    }
+
+    /**
+     * Route parameters
+     *
+     * @return array
+     */
+    public function getRouteParameters()
+    {
+        return $this->routeParameters;
+    }
 
     /**
      * Clean criteria
@@ -156,7 +203,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                             'limit'     => $this->limit,
                             'offset'    => $this->offset
                         ),
-                        $this->getCriteria()
+                        $this->getRouteParameters()
                     ),
                     true
                 )
@@ -319,7 +366,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                     'limit'     => $this->limit,
                     'offset'    => $this->offset
                 ),
-                $this->getCriteria()
+                $this->getRouteParameters()
             ),
             true
         );
