@@ -468,7 +468,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setCriteria($criteria = null)
     {
-        $this->criteria = $criteria;
+        $this->criteria = self::cleanCriteria($criteria);
 
         return $this;
     }
