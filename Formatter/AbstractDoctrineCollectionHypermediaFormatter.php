@@ -98,7 +98,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 'limit'                  => $this->limit,
                 'offset'                 => $this->offset
             ),
-            $this->getCriteria()
+            self::cleanCriteria($this->getCriteria())
         );
     }
 
@@ -468,7 +468,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setCriteria($criteria = null)
     {
-        $this->criteria = self::cleanCriteria($criteria);
+        $this->criteria = $criteria;
 
         return $this;
     }
