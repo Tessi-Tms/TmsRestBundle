@@ -421,7 +421,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     *  Set a query builder by using specific method on repository
+     * Set a query builder by using specific method on repository
      *
      * @param string $methodName
      * @param string $aliasName
@@ -431,7 +431,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     public function initQueryBuilder($methodName, $aliasName, array $arguments = array(), $namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-        $repository = $this->queryBuilder = $this
+        $repository = $this
             ->objectManager
             ->getRepository($namespace)
         ;
