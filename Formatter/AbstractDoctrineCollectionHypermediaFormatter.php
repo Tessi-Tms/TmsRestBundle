@@ -256,7 +256,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 true
             );
         }
-        
+
         return 0;
     }
 
@@ -553,16 +553,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     * Prepare a query to count objects
-     *
-     * @return \Doctrine\ORM\Query | Doctrine\ODM\MongoDB\Query\Query
-     */
-    public function prepareQueryCount()
-    {
-        return $this->prepareCountQueryBuilder()->getQuery();
-    }
-
-    /**
      * Add query sort to a Query Builder
      *
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
@@ -582,13 +572,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
     abstract protected function addCriteriaToQueryBuilder();
-
-    /**
-     * Prepare a query builder to count objects
-     *
-     * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
-     */
-    abstract protected function prepareCountQueryBuilder();
 
     /**
      * Count objects

@@ -62,18 +62,10 @@ class DoctrineOrmCollectionHypermediaFormatter extends AbstractDoctrineCollectio
     /**
      * {@inheritdoc }
      */
-    protected function prepareCountQueryBuilder()
-    {
-        $queryBuilder = clone $this->queryBuilder;
-
-        return $queryBuilder->select(sprintf('COUNT(%s.id)', $this->getAliasName()));
-    }
-
-    /**
-     * {@inheritdoc }
-     */
     protected function countObjects()
     {
-        return intval($this->prepareQueryCount()->getSingleScalarResult());
+        $paginator = new \Doctrine\ORM\Tools\Pagination\Paginator($this->queryBuilder->getQuery());
+
+        return count($paginator);
     }
 }
