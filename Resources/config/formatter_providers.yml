@@ -3,7 +3,6 @@ services:
         class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineItemHypermediaFormatterProvider
         arguments:
             - @router
-            - @tms_rest.criteria_builder
             - @jms_serializer
             - @fos_rest.routing.loader.controller
             - @tms_rest.request.param_reader_provider
@@ -15,7 +14,6 @@ services:
         class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineOrmCollectionHypermediaFormatterProvider
         arguments:
             - @router
-            - @tms_rest.criteria_builder
             - @jms_serializer
             - @fos_rest.routing.loader.controller
             - @tms_rest.request.param_reader_provider
@@ -27,7 +25,6 @@ services:
         class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineMongoDbCollectionHypermediaFormatterProvider
         arguments:
             - @router
-            - @tms_rest.criteria_builder
             - @jms_serializer
             - @fos_rest.routing.loader.controller
             - @tms_rest.request.param_reader_provider
@@ -39,7 +36,6 @@ services:
         class: Tms\Bundle\RestBundle\Formatter\Provider\InfoHypermediaFormatterProvider
         arguments:
             - @router
-            - @tms_rest.criteria_builder
             - @jms_serializer
             - @fos_rest.routing.loader.controller
             - @tms_rest.request.param_reader_provider

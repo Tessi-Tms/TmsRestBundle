@@ -35,7 +35,7 @@ abstract class AbstractEntityRepository extends EntityRepository
             }
         }
 
-        self::addCriteria($qb, 'entity', $criteria);
+        $this->addCriteria($qb, 'entity', $criteria);
 
         return $qb;
     }
@@ -78,19 +78,47 @@ abstract class AbstractEntityRepository extends EntityRepository
     }
 
     /**
+     * addCriteria
+     *
+     * @param QueryBuilder $qb
+     * @param string $sourceEntity
+     * @param array $criteria
+     */
+    public function addCriteria(QueryBuilder & $qb, $sourceEntity, array $criteria)
+    {
+        foreach ($criteria as $field => $value) {
+            if (null === $value || (is_array($value) && empty($value))) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                if ($this->getClassMetadata()->hasField($field)) {
+                    self::addWhere($qb, $sourceEntity, $field, $value, 'in');
+                } else {
+                    self::addJoin($qb, $sourceEntity, $field);
+                    self::addCriteria($qb, $field, $value);
+                }
+            } else {
+                self::addWhere($qb, $sourceEntity, $field, $value);
+            }
+        }
+    }
+
+    /**
      * addJoin
      *
      * @param QueryBuilder $qb
-     * @param string $relatedEntity
-     * @param string $sourceEntity
-     * @param array $relatedEntityCriteria
+     * @param string       $relatedEntity
+     * @param string       $sourceEntity
+     * @param array        $relatedEntityCriteria
+     * @param string       $operation (default 'eq')
      */
-    protected static function addJoin(QueryBuilder & $qb, $sourceEntity, $relatedEntity, array $relatedEntityCriteria = array())
+    protected static function addJoin(QueryBuilder & $qb, $sourceEntity, $relatedEntity, array $relatedEntityCriteria = array(), $operation = 'eq')
     {
         $qb->join(sprintf('%s.%s', $sourceEntity, $relatedEntity), $relatedEntity);
 
         foreach ($relatedEntityCriteria as $field => $value) {
-            self::addWhere($qb, $relatedEntity, $field, $value);
+            self::addWhere($qb, $relatedEntity, $field, $value, $operation);
         }
     }
 
@@ -98,34 +126,19 @@ abstract class AbstractEntityRepository extends EntityRepository
      * addWhere
      *
      * @param QueryBuilder $qb
-     * @param string $relatedEntity
-     * @param string $field
-     * @param string $value
+     * @param string       $relatedEntity
+     * @param string       $field
+     * @param string       $value
+     * @param string       $operation (default 'eq')
      */
-    protected static function addWhere(QueryBuilder & $qb, $relatedEntity, $field, $value)
+    protected static function addWhere(QueryBuilder & $qb, $relatedEntity, $field, $value, $operation = 'eq')
     {
-        $qb->where($qb->expr()->eq(
-            sprintf('%s.%s', $relatedEntity, $field),
-            $value
+        $qb->andWhere(call_user_func_array(
+            array($qb->expr(), $operation),
+            array(
+                sprintf('%s.%s', $relatedEntity, $field),
+                $value
+            )
         ));
-    }
-
-    /**
-     * addCriteria
-     *
-     * @param QueryBuilder $qb
-     * @param string $sourceEntity
-     * @param array $criteria
-     */
-    public static function addCriteria(QueryBuilder & $qb, $sourceEntity, array $criteria)
-    {
-        foreach ($criteria as $field => $value) {
-            if (is_array($value)) {
-                self::addJoin($qb, $sourceEntity, $field);
-                self::addCriteria($qb, $field, $value);
-            } else {
-                self::addWhere($qb, $sourceEntity, $field, $value);
-            }
-        }
     }
 }

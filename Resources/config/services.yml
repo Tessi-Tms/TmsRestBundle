@@ -6,8 +6,13 @@ parameters:
     tms_rest.formatter.factory.class:             Tms\Bundle\RestBundle\Factory\FormatterFactory
     tms_rest.request.param_reader_provider.class: Tms\Bundle\RestBundle\Request\ParamReaderProvider
     tms_rest.request.provider.class:              Tms\Bundle\RestBundle\Request\RequestProvider
+    tms_rest.binder.default.class:                Tms\Bundle\RestBundle\Binder\DefaultBinder
 
 services:
+    tms_rest.configuration_param_fetcher:
+        class: Tms\Bundle\RestBundle\ConfigurationParamFetcher
+        arguments: [%tms_rest.configuration%]
+
     tms_rest.criteria_builder:
         class: %tms_rest.criteria_builder.class%
         arguments: [%tms_rest.configuration%]
@@ -28,3 +33,7 @@ services:
     tms_rest.request.provider:
         class: %tms_rest.request.provider.class%
         arguments: [@service_container]
+
+    tms_rest.binder.default:
+        class: %tms_rest.binder.default.class%
+

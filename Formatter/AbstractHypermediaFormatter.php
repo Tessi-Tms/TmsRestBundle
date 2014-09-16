@@ -14,7 +14,6 @@ use Symfony\Component\Routing\Router;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use JMS\Serializer\Serializer;
-use Tms\Bundle\RestBundle\Criteria\CriteriaBuilder;
 use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
 use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
 
@@ -27,7 +26,6 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
     // Services
     protected $serializer;
     protected $router;
-    protected $criteriaBuilder;
     protected $routeLoader;
     protected $paramReaderProvider;
     protected $requestProvider;
@@ -45,7 +43,6 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
      */
     public function __construct(
         Router $router,
-        CriteriaBuilder $criteriaBuilder,
         Serializer $serializer,
         LoaderInterface $routeLoader,
         ParamReaderProviderInterface $paramReaderProvider,
@@ -56,7 +53,6 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
     {
         // Services
         $this->router = $router;
-        $this->criteriaBuilder = $criteriaBuilder;
         $this->serializer = $serializer;
         $this->routeLoader = $routeLoader;
         $this->paramReaderProvider = $paramReaderProvider;
@@ -65,9 +61,6 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
         // Formatters default attributes
         $this->currentRouteName = $currentRouteName;
         $this->format = $format;
-
-        // Initialize configuration by route
-        $this->criteriaBuilder->guessConfigurationByRoute($currentRouteName);
     }
 
     /**

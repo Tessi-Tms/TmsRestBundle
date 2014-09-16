@@ -10,6 +10,12 @@
 
 namespace Tms\Bundle\RestBundle\Formatter;
 
+use Symfony\Component\Routing\Router;
+use Symfony\Component\Config\Loader\LoaderInterface;
+use JMS\Serializer\Serializer;
+use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
+use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
+
 abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
     // Query params
@@ -20,10 +26,51 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected $offset     = null;
     protected $totalCount = null;
 
+    // Caca pour caca
+    protected $routeParameters = array();
+
     protected $queryBuilder = null;
     protected $aliasName    = null;
     protected $objects      = array();
     protected $itemRoutes   = null;
+
+
+    /**
+     * Constructor
+     */
+    public function __construct(
+        Router $router,
+        Serializer $serializer,
+        LoaderInterface $routeLoader,
+        ParamReaderProviderInterface $paramReaderProvider,
+        RequestProviderInterface $requestProvider,
+        $currentRouteName,
+        $format,
+        $routeParameters = array()
+    )
+    {
+        $this->routeParameters = $routeParameters;
+
+        parent::__construct(
+            $router,
+            $serializer,
+            $routeLoader,
+            $paramReaderProvider,
+            $requestProvider,
+            $currentRouteName,
+            $format
+        );
+    }
+
+    /**
+     * Route parameters
+     *
+     * @return array
+     */
+    public function getRouteParameters()
+    {
+        return $this->routeParameters;
+    }
 
     /**
      * Clean criteria
@@ -51,7 +98,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 'limit'                  => $this->limit,
                 'offset'                 => $this->offset
             ),
-            $this->getCriteria()
+            self::cleanCriteria($this->getCriteria())
         );
     }
 
@@ -92,14 +139,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function getObjectsFromRepository($namespace = null)
     {
-        // Set default values if some parameters are missing
-        $this->cleanAndSetQueryParams(array(
-            'limit'    => $this->limit,
-            'sort'     => $this->sort,
-            'page'     => $this->page,
-            'offset'   => $this->offset
-        ));
-
         // Init query builder with criteria
         $this->initCriteriaQueryBuilder($namespace);
 
@@ -145,28 +184,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     * Define all params with configuration if some are not given
-     *
-     * @param array $parameters
-     */
-    protected function cleanAndSetQueryParams(array $params)
-    {
-        foreach ($params as $name => $value) {
-            if (is_null($value)) {
-                $defineMethod = sprintf("initDefault%sValue", ucfirst($name));
-                if (!method_exists($this->criteriaBuilder, $defineMethod)) {
-                    throw new \Exception(sprintf("No %s method find to clean %s param.", $defineMethod, $name));
-                }
-
-                $this->$name = $this
-                    ->criteriaBuilder
-                    ->$defineMethod()
-                ;
-            }
-        }
-    }
-
-    /**
      * Format links into a given layout for hypermedia
      *
      * @return array
@@ -186,7 +203,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                             'limit'     => $this->limit,
                             'offset'    => $this->offset
                         ),
-                        $this->getCriteria()
+                        $this->getRouteParameters()
                     ),
                     true
                 )
@@ -239,7 +256,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 true
             );
         }
-        
+
         return 0;
     }
 
@@ -349,7 +366,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                     'limit'     => $this->limit,
                     'offset'    => $this->offset
                 ),
-                $this->getCriteria()
+                $this->getRouteParameters()
             ),
             true
         );
@@ -404,7 +421,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     *  Set a query builder by using specific method on repository
+     * Set a query builder by using specific method on repository
      *
      * @param string $methodName
      * @param string $aliasName
@@ -414,7 +431,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     public function initQueryBuilder($methodName, $aliasName, array $arguments = array(), $namespace = null)
     {
         $namespace = is_null($namespace) ? $this->objectNamespace : $namespace;
-        $repository = $this->queryBuilder = $this
+        $repository = $this
             ->objectManager
             ->getRepository($namespace)
         ;
@@ -451,12 +468,36 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setCriteria($criteria = null)
     {
-        $this->criteria = $this
-            ->criteriaBuilder
-            ->cleanCriteriaValue($criteria)
-        ;
+        $this->criteria = self::cleanCriteria($criteria);
 
         return $this;
+    }
+
+    /**
+     * Clean the criteria value
+     *
+     * @param array $criteria
+     * @return array
+     */
+    public function cleanCriteria($criteria = null)
+    {
+        if(is_null($criteria)) {
+            return array();
+        }
+
+        foreach ($criteria as $name => $value) {
+            if (null === $value || $value === array()) {
+                unset($criteria[$name]);
+
+                continue;
+            }
+
+            if (is_array($value)) {
+                $criteria[$name] = self::cleanCriteria($value);
+            }
+        }
+
+        return $criteria;
     }
 
     /**
@@ -467,11 +508,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setLimit($limit = null)
     {
-        $this->limit = $this
-            ->criteriaBuilder
-            ->initDefaultLimitValue($limit)
-        ;
-        
+        $this->limit = $limit;
+
         return $this;
     }
 
@@ -483,11 +521,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setSort($sort = null)
     {
-        $this->sort = $this
-            ->criteriaBuilder
-            ->initDefaultSortValue($sort)
-        ;
-        
+        $this->sort = $sort;
+
         return $this;
     }
 
@@ -499,11 +534,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setPage($page = null)
     {
-        $this->page = $this
-            ->criteriaBuilder
-            ->initDefaultPageValue($page)
-        ;
-        
+        $this->page = $page;
+
         return $this;
     }
 
@@ -515,22 +547,9 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setOffset($offset = null)
     {
-        $this->offset = $this
-            ->criteriaBuilder
-            ->initDefaultOffsetValue($offset)
-        ;
-        
-        return $this;
-    }
+        $this->offset = $offset;
 
-    /**
-     * Prepare a query to count objects
-     *
-     * @return \Doctrine\ORM\Query | Doctrine\ODM\MongoDB\Query\Query
-     */
-    public function prepareQueryCount()
-    {
-        return $this->prepareCountQueryBuilder()->getQuery();
+        return $this;
     }
 
     /**
@@ -553,13 +572,6 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @return Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
      */
     abstract protected function addCriteriaToQueryBuilder();
-
-    /**
-     * Prepare a query builder to count objects
-     *
-     * @return \Doctrine\ORM\QueryBuilder | Doctrine\ODM\MongoDB\Query\Builder
-     */
-    abstract protected function prepareCountQueryBuilder();
 
     /**
      * Count objects
