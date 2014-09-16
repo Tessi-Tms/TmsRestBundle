@@ -225,9 +225,11 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
 
                         foreach ($paramReader->getParamsFromMethod($method) as $name => $param) {
                             if ($param->nullable) {
-                                $optionalParams[$name] = $param->requirements;
+                                $optionalParams[$name] =
+                                    isset($param->requirements) ? $param->requirements : '';
                             } else {
-                                $requiredParams[$name] = $param->requirements;
+                                $requiredParams[$name] =
+                                    isset($param->requirements) ? $param->requirements : '';
                             }
                         }
 
