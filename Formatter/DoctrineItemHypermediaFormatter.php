@@ -20,10 +20,10 @@ use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
 
 class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatter
 {
-    protected $objectPK      = 'id';
-    protected $objectPKValue = null;
-    protected $object        = null;
-    protected $embeddeds     = null;
+    protected $routeParameters = array();
+    protected $objectCriteria  = array();
+    protected $object          = null;
+    protected $embeddeds       = null;
 
     /**
      * Constructor
@@ -36,12 +36,15 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         RequestProviderInterface $requestProvider,
         $currentRouteName,
         $format,
-        $objectPKValue,
-        $objectPK = 'id'
+        $routeParameters,
+        $objectCriteria = array()
     )
     {
-        $this->objectPKValue = $objectPKValue;
-        $this->objectPK = $objectPK;
+        $this->routeParameters = $routeParameters;
+        $this->objectCriteria  = $objectCriteria;
+        if (count($objectCriteria) == 0) {
+            $this->objectCriteria  = $routeParameters;
+        }
 
         parent::__construct(
             $router,
@@ -100,17 +103,17 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     }
 
     /**
-     * Find single object from repository with objectPKValue
+     * Find single object from repository with objectCriteria
      *
      * @return Object
      */
     protected function getObjectsFromRepository()
     {
         if(!$this->object) {
-            $findOneByMethod = sprintf("findOneBy%s", ucfirst($this->objectPK));
             $object = $this->objectManager
                 ->getRepository($this->objectNamespace)
-                ->$findOneByMethod($this->objectPKValue);
+                ->findOneBy($this->objectCriteria)
+            ;
 
             if (!$object) {
                 throw new NotFoundHttpException();
@@ -135,15 +138,14 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     protected function generateLink($routeName, $object, $isEmbedded = false, array $parameters = array())
     {
         $classIdentifier = $this->getClassIdentifier(get_class($object));
-        
-        if (!$isEmbedded && isset($this->objectPK)) {
-            $classIdentifier = $this->objectPK;
-        }
 
         $getMethod = sprintf("get%s", ucfirst($classIdentifier));
-        $routeParameters = array(
-            '_format' => $this->format,
-            $classIdentifier => $object->$getMethod(),
+        $routeParameters = array_merge(
+            $this->routeParameters,
+            array(
+                '_format' => $this->format,
+                $classIdentifier => $object->$getMethod()
+            )
         );
 
         foreach ($parameters as $key => $parameter) {
@@ -225,11 +227,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     {
         $path = $route->getPath();
 
-        if (isset($this->objectPK)) {
-            $classIdentifier = $this->objectPK;
-        } else {
-            $classIdentifier = $this->getClassIdentifier(get_class($this->object));
-        }
+        $classIdentifier = $this->getClassIdentifier(get_class($this->object));
         $id = sprintf('{%s}', $classIdentifier);
 
         if (strpos($path, $id) === false) {

@@ -248,10 +248,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             );
         } else {
             return $this->router->generate(
-                $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)],
-                array(
-                    '_format' => $this->format,
-                    $this->getClassIdentifier($itemNamespace) => $object->$getKeyMethod()
+                $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)]['route'],
+                array_merge(
+                    $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)]['parameters'],
+                    array(
+                        '_format' => $this->format,
+                        $this->getClassIdentifier($itemNamespace) => $object->$getKeyMethod()
+                    )
                 ),
                 true
             );
@@ -450,12 +453,16 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      *
      * @param string $itemNamespace
      * @param string $itemRoute
-     * 
+     * @param array  $itemRouteParameters
+     *
      * @return $this
      */
-    public function addItemRoute($itemNamespace, $itemRoute)
+    public function addItemRoute($itemNamespace, $itemRoute, $itemRouteParameters = array())
     {
-        $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)] = $itemRoute;
+        $this->itemRoutes[$this->getCleanedObjectName($itemNamespace)] = array(
+            'route'      => $itemRoute,
+            'parameters' => $itemRouteParameters
+        );
 
         return $this;
     }
