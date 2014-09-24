@@ -36,7 +36,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
         RequestProviderInterface $requestProvider,
         $currentRouteName,
         $format,
-        $routeParameters,
+        $routeParameters = array(),
         $objectCriteria = array()
     )
     {
@@ -74,12 +74,19 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
      */
     protected function formatLinks()
     {
+        $routeParameters = $this->routeParameters;
+        if (count($this->routeParameters) == 0) {
+            $classIdentifier = $this->getClassIdentifier(get_class($this->object));
+            $getMethod = sprintf("get%s", ucfirst($classIdentifier));
+            $routeParameters = array($classIdentifier => $this->object->$getMethod());
+        }
+
         return array(
             'self' => array(
                 'rel' => 'self',
                 'href' => $this->generateLink(
                     $this->currentRouteName,
-                    $this->object
+                    $routeParameters
                 )
             ),
             'embeddeds' => $this->formatEmbeddeds()
@@ -126,43 +133,22 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
     }
 
     /**
-     * Generate a link for a single object
+     * Generate a link
      * 
      * @param string  $routeName
-     * @param Object  $object
-     * @param boolean $isEmbedded
      * @param array   $parameters
      * 
      * @return Collection
      */
-    protected function generateLink($routeName, $object, $isEmbedded = false, array $parameters = array())
+    protected function generateLink($routeName, array $parameters = array())
     {
-        $classIdentifier = $this->getClassIdentifier(get_class($object));
-
-        $getMethod = sprintf("get%s", ucfirst($classIdentifier));
-        $routeParameters = array_merge(
-            $this->routeParameters,
-            array(
-                '_format' => $this->format,
-                $classIdentifier => $object->$getMethod()
-            )
-        );
-
-        foreach ($parameters as $key => $parameter) {
-            $parameterPath = explode('.', $parameter);
-            $parameterValue = $object;
-
-            foreach ($parameterPath as $path) {
-                $getParameterMethod = sprintf("get%s", ucfirst($path));
-                $parameterValue = $parameterValue->$getParameterMethod();
-            }
-
-            $routeParameters[$key] = $parameterValue;
-        }
-
         return $this->router->generate(
             $routeName,
-            $routeParameters,
+            array_merge(
+                array('_format' => $this->format),
+                $this->routeParameters,
+                $parameters
+            ),
             true
         );
     }
@@ -210,8 +196,6 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
                 'rel'  => 'embedded',
                 'href' => $this->generateLink(
                     $embeddedCollectionRoute,
-                    $this->object,
-                    true,
                     $parameters
                 )
             );
