@@ -26,7 +26,10 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected $offset     = null;
     protected $totalCount = null;
 
-    // Caca pour caca
+    protected $linkedCriteria  = null;
+    protected $forceTotalCount = false;
+
+    // Cacou pour cacou
     protected $routeParameters = array();
 
     protected $queryBuilder = null;
@@ -73,13 +76,27 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     * Clean criteria
+     * Get criteria
      *
      * @return array
      */
     public function getCriteria()
     {
         return $this->criteria;
+    }
+
+    /**
+     * Get linked criteria
+     *
+     * @return array
+     */
+    public function getLinkedCriteria()
+    {
+        if (!empty($this->linkedCriteria)) {
+            return $this->linkedCriteria;
+        }
+
+        return $this->getCriteria();
     }
 
     /**
@@ -98,7 +115,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 'limit'                  => $this->limit,
                 'offset'                 => $this->offset
             ),
-            self::cleanCriteria($this->getCriteria())
+            self::cleanCriteria($this->getLinkedCriteria())
         );
     }
 
@@ -143,7 +160,9 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         $this->initCriteriaQueryBuilder($namespace);
 
         // Count objects according to a given criteria
-        $this->totalCount = $this->countObjects();
+        if (!$this->forceTotalCount) {
+            $this->totalCount = $this->countObjects();
+        }
 
         // Add sort & pagination to query builder
         $this->addSortToQueryBuilder();
@@ -196,14 +215,14 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 'href' => $this->router->generate(
                     $this->currentRouteName,
                     array_merge(
+                        $this->getRouteParameters(),
                         array(
                             '_format'   => $this->format,
                             'page'      => $this->page,
                             'sort'      => $this->sort,
                             'limit'     => $this->limit,
                             'offset'    => $this->offset
-                        ),
-                        $this->getRouteParameters()
+                        )
                     ),
                     true
                 )
@@ -362,14 +381,14 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         return $this->router->generate(
             $this->currentRouteName,
             array_merge(
+                $this->getRouteParameters(),
                 array(
                     '_format'   => $this->format,
                     'page'      => $page,
                     'sort'      => $this->sort,
                     'limit'     => $this->limit,
                     'offset'    => $this->offset
-                ),
-                $this->getRouteParameters()
+                )
             ),
             true
         );
@@ -473,9 +492,10 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @param array $criteria
      * @return $this
      */
-    public function setCriteria($criteria = null)
+    public function setCriteria(array $criteria = null, array $linkedCriteria = null)
     {
         $this->criteria = self::cleanCriteria($criteria);
+        $this->linkedCriteria = self::cleanCriteria($linkedCriteria);
 
         return $this;
     }
@@ -505,6 +525,17 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         }
 
         return $criteria;
+    }
+
+    /**
+     * Force the total count
+     *
+     * @param integer $totalCount
+     */
+    public function forceTotalCount($totalCount)
+    {
+        $this->totalCount = $totalCount;
+        $this->forceTotalCount = true;
     }
 
     /**
