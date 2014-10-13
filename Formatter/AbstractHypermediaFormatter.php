@@ -40,6 +40,14 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
 
     /**
      * Constructor
+     *
+     * @param Router                       $router              Instance of Router
+     * @param Serializer                   $serializer          Instance of Serializer
+     * @param LoaderInterface              $routeLoader         Instance of LoaderInterface
+     * @param ParamReaderProviderInterface $paramReaderProvider Instance of ParamReaderProviderInterface
+     * @param RequestProviderInterface     $requestProvider     Instance of RequestProviderInterface
+     * @param string                       $currentRouteName    The current route name
+     * @param string                       $format              The output format
      */
     public function __construct(
         Router $router,

@@ -1,4 +1,15 @@
 services:
+    tms_rest.formatter.provider.array:
+        class: Tms\Bundle\RestBundle\Formatter\Provider\ArrayHypermediaFormatterProvider
+        arguments:
+            - @router
+            - @jms_serializer
+            - @fos_rest.routing.loader.controller
+            - @tms_rest.request.param_reader_provider
+            - @tms_rest.request.provider
+        tags:
+            - { name: tms_rest.formatter.provider, id: array }
+
     tms_rest.formatter.provider.item:
         class: Tms\Bundle\RestBundle\Formatter\Provider\DoctrineItemHypermediaFormatterProvider
         arguments:
