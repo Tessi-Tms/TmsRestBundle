@@ -28,6 +28,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
 
     protected $linkedCriteria  = null;
     protected $forceTotalCount = false;
+    protected $realPage        = null;
 
     // Cacou pour cacou
     protected $routeParameters = array();
@@ -109,7 +110,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         return array_merge(
             parent::formatMetadata(),
             array(
-                'page'                   => $this->page,
+                'page'                   => $this->getRealPage(),
                 'pageCount'              => $this->computePageCount(),
                 'totalCount'             => $this->totalCount,
                 'limit'                  => $this->limit,
@@ -218,7 +219,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                         $this->getRouteParameters(),
                         array(
                             '_format'   => $this->format,
-                            'page'      => $this->page,
+                            'page'      => $this->getRealPage(),
                             'sort'      => $this->sort,
                             'limit'     => $this->limit,
                             'offset'    => $this->offset
@@ -336,11 +337,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function generatePreviousPageLink()
     {
-        if ($this->page - 1 < 1) {
+        $page = $this->getRealPage();
+
+        if ($page - 1 < 1) {
             return '';
         }
 
-        return $this->generatePageLink($this->page-1);
+        return $this->generatePageLink($page - 1);
     }
 
     /**
@@ -364,11 +367,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function generateNextPageLink()
     {
-        if ($this->page + 1 > $this->computeTotalPage()) {
+        $page = $this->getRealPage();
+        
+        if ($page + 1 > $this->computeTotalPage()) {
             return '';
         }
 
-        return $this->generatePageLink($this->page+1);
+        return $this->generatePageLink($page + 1);
     }
 
     /**
@@ -401,13 +406,15 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function computePageCount()
     {
-        if($this->computeOffsetWithPage() > $this->totalCount) {
+        $offset = $this->computeOffsetWithPage(true);
+
+        if ($offset > $this->totalCount) {
             return 0;
         } else {
-            if($this->totalCount-$this->computeOffsetWithPage() > $this->limit) {
+            if ($this->totalCount - $offset > $this->limit) {
                 return $this->limit;
             } else {
-               return $this->totalCount-$this->computeOffsetWithPage(); 
+                return $this->totalCount-$offset; 
             }
         }
 
@@ -429,9 +436,11 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      *
      * @return integer
      */
-    protected function computeOffsetWithPage()
+    protected function computeOffsetWithPage($useRealPage = false)
     {
-        return $this->offset+($this->page-1)*$this->limit;
+        $page = $useRealPage ? $this->getRealPage() : $this->page;
+
+        return $this->offset+($page-1)*$this->limit;
     }
 
     /**
@@ -532,10 +541,21 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      *
      * @param integer $totalCount
      */
-    public function forceTotalCount($totalCount)
+    public function forceTotalCount($realTotalCount, $realPage = null)
     {
-        $this->totalCount = $totalCount;
+        $this->totalCount = (int)$realTotalCount;
+        $this->realPage = (int)$realPage;
         $this->forceTotalCount = true;
+    }
+
+    /**
+     * Get the real page
+     *
+     * @param integer $totalCount
+     */
+    protected function getRealPage()
+    {
+        return $this->realPage ? $this->realPage : $this->page;
     }
 
     /**
@@ -546,7 +566,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setLimit($limit = null)
     {
-        $this->limit = $limit;
+        $this->limit = null !== $limit ? (int)$limit : null;
 
         return $this;
     }
@@ -572,7 +592,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setPage($page = null)
     {
-        $this->page = $page;
+        $this->page = null !== $page ? (int)$page : null;
 
         return $this;
     }
@@ -585,7 +605,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setOffset($offset = null)
     {
-        $this->offset = $offset;
+        $this->offset = null !== $offset ? (int)$offset : null;
 
         return $this;
     }
