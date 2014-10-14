@@ -26,7 +26,11 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected $offset     = null;
     protected $totalCount = null;
 
-    // Caca pour caca
+    protected $linkedCriteria  = null;
+    protected $forceTotalCount = false;
+    protected $realPage        = null;
+
+    // Cacou pour cacou
     protected $routeParameters = array();
 
     protected $queryBuilder = null;
@@ -73,13 +77,27 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
-     * Clean criteria
+     * Get criteria
      *
      * @return array
      */
     public function getCriteria()
     {
         return $this->criteria;
+    }
+
+    /**
+     * Get linked criteria
+     *
+     * @return array
+     */
+    public function getLinkedCriteria()
+    {
+        if (!empty($this->linkedCriteria)) {
+            return $this->linkedCriteria;
+        }
+
+        return $this->getCriteria();
     }
 
     /**
@@ -92,13 +110,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         return array_merge(
             parent::formatMetadata(),
             array(
-                'page'                   => $this->page,
+                'page'                   => $this->getRealPage(),
                 'pageCount'              => $this->computePageCount(),
                 'totalCount'             => $this->totalCount,
                 'limit'                  => $this->limit,
                 'offset'                 => $this->offset
             ),
-            self::cleanCriteria($this->getCriteria())
+            self::cleanCriteria($this->getLinkedCriteria())
         );
     }
 
@@ -143,7 +161,9 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         $this->initCriteriaQueryBuilder($namespace);
 
         // Count objects according to a given criteria
-        $this->totalCount = $this->countObjects();
+        if (!$this->forceTotalCount) {
+            $this->totalCount = $this->countObjects();
+        }
 
         // Add sort & pagination to query builder
         $this->addSortToQueryBuilder();
@@ -196,14 +216,14 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 'href' => $this->router->generate(
                     $this->currentRouteName,
                     array_merge(
+                        $this->getRouteParameters(),
                         array(
                             '_format'   => $this->format,
-                            'page'      => $this->page,
+                            'page'      => $this->getRealPage(),
                             'sort'      => $this->sort,
                             'limit'     => $this->limit,
                             'offset'    => $this->offset
-                        ),
-                        $this->getRouteParameters()
+                        )
                     ),
                     true
                 )
@@ -317,11 +337,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function generatePreviousPageLink()
     {
-        if ($this->page - 1 < 1) {
+        $page = $this->getRealPage();
+
+        if ($page - 1 < 1) {
             return '';
         }
 
-        return $this->generatePageLink($this->page-1);
+        return $this->generatePageLink($page - 1);
     }
 
     /**
@@ -345,11 +367,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function generateNextPageLink()
     {
-        if ($this->page + 1 > $this->computeTotalPage()) {
+        $page = $this->getRealPage();
+        
+        if ($page + 1 > $this->computeTotalPage()) {
             return '';
         }
 
-        return $this->generatePageLink($this->page+1);
+        return $this->generatePageLink($page + 1);
     }
 
     /**
@@ -362,14 +386,14 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         return $this->router->generate(
             $this->currentRouteName,
             array_merge(
+                $this->getRouteParameters(),
                 array(
                     '_format'   => $this->format,
                     'page'      => $page,
                     'sort'      => $this->sort,
                     'limit'     => $this->limit,
                     'offset'    => $this->offset
-                ),
-                $this->getRouteParameters()
+                )
             ),
             true
         );
@@ -382,13 +406,15 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function computePageCount()
     {
-        if($this->computeOffsetWithPage() > $this->totalCount) {
+        $offset = $this->computeOffsetWithPage(true);
+
+        if ($offset > $this->totalCount) {
             return 0;
         } else {
-            if($this->totalCount-$this->computeOffsetWithPage() > $this->limit) {
+            if ($this->totalCount - $offset > $this->limit) {
                 return $this->limit;
             } else {
-               return $this->totalCount-$this->computeOffsetWithPage(); 
+                return $this->totalCount-$offset; 
             }
         }
 
@@ -410,9 +436,11 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      *
      * @return integer
      */
-    protected function computeOffsetWithPage()
+    protected function computeOffsetWithPage($useRealPage = false)
     {
-        return $this->offset+($this->page-1)*$this->limit;
+        $page = $useRealPage ? $this->getRealPage() : $this->page;
+
+        return $this->offset+($page-1)*$this->limit;
     }
 
     /**
@@ -473,9 +501,10 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      * @param array $criteria
      * @return $this
      */
-    public function setCriteria($criteria = null)
+    public function setCriteria(array $criteria = null, array $linkedCriteria = null)
     {
         $this->criteria = self::cleanCriteria($criteria);
+        $this->linkedCriteria = self::cleanCriteria($linkedCriteria);
 
         return $this;
     }
@@ -508,6 +537,28 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
+     * Force the total count
+     *
+     * @param integer $totalCount
+     */
+    public function forceTotalCount($realTotalCount, $realPage = null)
+    {
+        $this->totalCount = (int)$realTotalCount;
+        $this->realPage = (int)$realPage;
+        $this->forceTotalCount = true;
+    }
+
+    /**
+     * Get the real page
+     *
+     * @param integer $totalCount
+     */
+    protected function getRealPage()
+    {
+        return $this->realPage ? $this->realPage : $this->page;
+    }
+
+    /**
      * Set the limit
      *
      * @param integer $limit
@@ -515,7 +566,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setLimit($limit = null)
     {
-        $this->limit = $limit;
+        $this->limit = null !== $limit ? (int)$limit : null;
 
         return $this;
     }
@@ -541,7 +592,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setPage($page = null)
     {
-        $this->page = $page;
+        $this->page = null !== $page ? (int)$page : null;
 
         return $this;
     }
@@ -554,7 +605,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     public function setOffset($offset = null)
     {
-        $this->offset = $offset;
+        $this->offset = null !== $offset ? (int)$offset : null;
 
         return $this;
     }
