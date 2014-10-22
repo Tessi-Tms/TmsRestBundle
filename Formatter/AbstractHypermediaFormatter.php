@@ -21,6 +21,7 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
 {
     const SERIALIZER_CONTEXT_GROUP_ITEM       = 'tms_rest.item';
     const SERIALIZER_CONTEXT_GROUP_COLLECTION = 'tms_rest.collection';
+    const SERIALIZER_CONTEXT_GROUP_ARRAY      = 'tms_rest.array';
     const SERIALIZER_CONTEXT_GROUP_NAME       = 'serializerContextGroup';
 
     // Services

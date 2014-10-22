@@ -69,19 +69,6 @@ class ArrayHypermediaFormatter extends AbstractHypermediaFormatter
     }
 
     /**
-     * Format raw data to have hypermedia metadata in output
-     *
-     * @return array
-     */
-    protected function formatMetadata()
-    {
-        return array(
-            'type' => $this->getType(),
-            AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_NAME => $this->getSerializerContextGroup()
-        );
-    }
-
-    /**
      * {@inheritdoc}
      */
     protected function formatData()
@@ -96,7 +83,7 @@ class ArrayHypermediaFormatter extends AbstractHypermediaFormatter
      */
     protected function formatLinks()
     {
-        return null;
+        return array();
     }
 
     /**
@@ -114,6 +101,6 @@ class ArrayHypermediaFormatter extends AbstractHypermediaFormatter
      */
     protected function getSerializerContextGroup()
     {
-        return AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_COLLECTION;
+        return AbstractHypermediaFormatter::SERIALIZER_CONTEXT_GROUP_ARRAY;
     }
 }
