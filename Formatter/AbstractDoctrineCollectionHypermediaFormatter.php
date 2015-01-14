@@ -25,6 +25,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected $page       = null;
     protected $offset     = null;
     protected $totalCount = null;
+    protected $extraQuery = array();
 
     protected $linkedCriteria  = null;
     protected $forceTotalCount = false;
@@ -392,8 +393,9 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                     'page'      => $page,
                     'sort'      => $this->sort,
                     'limit'     => $this->limit,
-                    'offset'    => $this->offset
-                )
+                    'offset'    => $this->offset,
+                ),
+                $this->extraQuery
             ),
             true
         );
@@ -428,6 +430,10 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function computeTotalPage()
     {
+        if ($this->limit === 0) {
+            return 0;
+        }
+
         return ceil($this->totalCount / $this->limit);
     }
 
@@ -610,6 +616,18 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         return $this;
     }
 
+    /**
+     * Set extra query
+     *
+     * @param array $extra
+     * @return $this
+     */
+    public function setExtraQuery(array $extra)
+    {
+        $this->extraQuery = $extra;
+
+        return $this;
+    }
     /**
      * Add query sort to a Query Builder
      *
