@@ -17,8 +17,8 @@
         "doctrine/orm":                        ">=2.2.3,<2.4-dev",
         "doctrine/doctrine-bundle":            "1.2.*",
         "twig/twig":                           "*",
-        "jms/serializer-bundle":               "dev-master",
-        "friendsofsymfony/rest-bundle":        "dev-master"
+        "jms/serializer-bundle":               ">=1.0",
+        "friendsofsymfony/rest-bundle":        "~1.5"
     },
     "autoload": {
         "psr-0": { "Tms\\Bundle\\RestBundle": "" }
