@@ -392,8 +392,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                     'limit'     => $this->limit,
                     'offset'    => $this->offset,
                 ),
-                $this->extraQuery,
-                $this->getCriteria()
+                $this->extraQuery
             ),
             true
         );
