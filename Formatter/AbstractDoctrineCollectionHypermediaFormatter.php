@@ -214,20 +214,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         return array(
             'self' => array(
                 'rel'  => 'self',
-                'href' => $this->router->generate(
-                    $this->currentRouteName,
-                    array_merge(
-                        $this->getRouteParameters(),
-                        array(
-                            '_format'   => $this->format,
-                            'page'      => $this->getRealPage(),
-                            'sort'      => $this->sort,
-                            'limit'     => $this->limit,
-                            'offset'    => $this->offset
-                        )
-                    ),
-                    true
-                )
+                'href' =>  $this->generateCurrentPageLink()
             ),
             'nextPage'      => array(
                 'rel'  => 'nav',
@@ -332,6 +319,16 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     }
 
     /**
+     * Generate current page link to navigate in hypermedia collection
+     *
+     * @return string
+     */
+    protected function generateCurrentPageLink()
+    {
+        return $this->generatePageLink($this->getRealPage());
+    }
+
+    /**
      * Generate previous page link to navigate in hypermedia collection
      *
      * @return string
@@ -369,7 +366,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
     protected function generateNextPageLink()
     {
         $page = $this->getRealPage();
-        
+
         if ($page + 1 > $this->computeTotalPage()) {
             return '';
         }
@@ -395,7 +392,8 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                     'limit'     => $this->limit,
                     'offset'    => $this->offset,
                 ),
-                $this->extraQuery
+                $this->extraQuery,
+                $this->getCriteria()
             ),
             true
         );
@@ -416,7 +414,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
             if ($this->totalCount - $offset > $this->limit) {
                 return $this->limit;
             } else {
-                return $this->totalCount-$offset; 
+                return $this->totalCount-$offset;
             }
         }
 
