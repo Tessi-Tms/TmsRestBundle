@@ -40,6 +40,10 @@ class DoctrineOrmCollectionHypermediaFormatter extends AbstractDoctrineCollectio
         }
 
         foreach ($this->criteria as $column => $value) {
+            if (!$this->getClassMetadata()->hasField($column)) {
+                continue;
+            }
+
             if (!is_array($value)) {
                 $this->queryBuilder->andWhere(sprintf('%s.%s = :%s', $this->getAliasName(), $column, $column));
                 $this->queryBuilder->setParameter($column, $value);
