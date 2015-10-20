@@ -14,6 +14,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\Loader;
+use Symfony\Component\DependencyInjection\DefinitionDecorator;
 
 /**
  * This is the class that loads and manages your bundle configuration
@@ -34,7 +35,19 @@ class TmsRestExtension extends Extension
         $loader->load('services.yml');
         $loader->load('formatter_providers.yml');
         $loader->load('listeners.yml');
+        $loader->load('entity_handlers.yml');
 
         $container->setParameter('tms_rest.configuration', $config);
+
+        foreach ($config['entity_handlers'] as $key => $entityHandler) {
+            $definition = new DefinitionDecorator($entityHandler['service']);
+
+            $definition->replaceArgument(3, $entityHandler['entity']);
+
+            $container->setDefinition(
+                sprintf('tms_rest.entity_handler.%s', $key),
+                $definition
+            );
+        }
     }
 }

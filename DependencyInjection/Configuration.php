@@ -109,6 +109,16 @@ class Configuration implements ConfigurationInterface
                     ->end()
                 ->end()
             ->end()
+            ->children()
+                ->arrayNode('entity_handlers')
+                    ->useAttributeAsKey('')
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('entity')->end()
+                            ->scalarNode('service')->defaultValue('tms_rest.entity_handler')->end()
+                    ->end()
+                ->end()
+            ->end()
         ;
 
         return $treeBuilder;
