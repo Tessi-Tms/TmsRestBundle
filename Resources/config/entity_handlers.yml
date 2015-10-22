@@ -1,0 +1,12 @@
+parameters:
+    tms_rest.entity_handler.class: Tms\Bundle\RestBundle\Entity\EntityHandler
+
+services:
+    tms_rest.entity_handler:
+        class: %tms_rest.entity_handler.class%
+        abstract: true
+        arguments:
+            - @doctrine
+            - @validator
+            - @event_dispatcher
+            - null
