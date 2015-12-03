@@ -197,6 +197,12 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
         $actions = array();
         $request = $this->requestProvider->provide();
         $baseUrl = sprintf('%s://%s', $request->getScheme(), $request->getHttpHost());
+        $matches = array();
+        $scriptName = '';
+        $requestUri = $request->server->get('REQUEST_URI', '');
+        if (preg_match('@^(/[^/]*.php)@i', $requestUri, $matches)) {
+            $scriptName = $matches[0];
+        }
 
         foreach ($this->controllers as $controller) {
             $paramReader = $this->paramReaderProvider->provide();
@@ -215,8 +221,9 @@ abstract class AbstractHypermediaFormatter implements FormatterInterface
 
                     if ($path) {
                         $httpMethods = $route->getMethods();
-                        $url = sprintf('%s%s',
+                        $url = sprintf('%s%s%s',
                             $baseUrl,
+                            $scriptName,
                             $path
                         );
 
