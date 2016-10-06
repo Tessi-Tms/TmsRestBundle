@@ -19,7 +19,7 @@ class InitializeFormatterFactoryPass implements CompilerPassInterface
             return;
         }
 
-        $definition = $container->getDefinition('tms_rest.formatter.factory');
+        $definition = $container->findDefinition('tms_rest.formatter.factory');
 
         // Injection of the aggregators.
         $taggedServices = $container->findTaggedServiceIds('tms_rest.formatter.provider');
