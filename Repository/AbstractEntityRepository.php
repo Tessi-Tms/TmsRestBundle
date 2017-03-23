@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 
+ *
  * @author:  Gabriel BONDAZ <gabriel.bondaz@idci-consulting.fr>
  * @license: MIT
  *
@@ -19,10 +19,10 @@ abstract class AbstractEntityRepository extends EntityRepository
 {
     /**
      * Find by query builder
-     * 
+     *
      * @param array $criteria
      * @param array|null $orderBy
-     * 
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function findByQueryBuilder(array $criteria, array $orderBy = null)
@@ -45,7 +45,7 @@ abstract class AbstractEntityRepository extends EntityRepository
      *
      * @param array $criteria
      * @param array|null $orderBy
-     * 
+     *
      * @return \Doctrine\ORM\Query
      */
     public function findByQuery(array $criteria = null, array $orderBy = null)
@@ -55,9 +55,9 @@ abstract class AbstractEntityRepository extends EntityRepository
 
     /**
      * Find all query builder
-     * 
+     *
      * @param array|null $orderBy
-     * 
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function findAllQueryBuilder(array $orderBy = null)
@@ -67,9 +67,9 @@ abstract class AbstractEntityRepository extends EntityRepository
 
     /**
      * Find all query
-     * 
+     *
      * @param array|null $orderBy
-     * 
+     *
      * @return \Doctrine\ORM\Query
      */
     public function findAllQuery(array $orderBy = null)
@@ -133,12 +133,15 @@ abstract class AbstractEntityRepository extends EntityRepository
      */
     protected static function addWhere(QueryBuilder & $qb, $relatedEntity, $field, $value, $operation = 'eq')
     {
-        $qb->andWhere(call_user_func_array(
-            array($qb->expr(), $operation),
-            array(
-                sprintf('%s.%s', $relatedEntity, $field),
-                $value
-            )
-        ));
+        $qb
+            ->andWhere(call_user_func_array(
+                array($qb->expr(), $operation),
+                array(
+                    sprintf('%s.%s', $relatedEntity, $field),
+                    sprintf(':%sValue', $field)
+                )
+            ))
+            ->setParameter(sprintf('%sValue', $field), $value)
+        ;
     }
 }
