@@ -33,6 +33,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
 
     // Cacou pour cacou
     protected $routeParameters = array();
+    protected $ignoreOffsetWithPage = false;
 
     protected $queryBuilder = null;
     protected $aliasName    = null;
@@ -441,6 +442,10 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
      */
     protected function computeOffsetWithPage($useRealPage = false)
     {
+        if ($this->ignoreOffsetWithPage) {
+            return 0;
+        }
+
         $page = $useRealPage ? $this->getRealPage() : $this->page;
 
         return $this->offset+($page-1)*$this->limit;
@@ -625,6 +630,20 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
 
         return $this;
     }
+
+    /**
+     * Ignore offset with page computation.
+     *
+     * @param bool $ignore
+     * @return $this
+     */
+    public function ignoreOffsetWithPage($ignore = true)
+    {
+        $this->ignoreOffsetWithPage = $ignore;
+
+        return $this;
+    }
+
     /**
      * Add query sort to a Query Builder
      *
