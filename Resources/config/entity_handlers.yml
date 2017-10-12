@@ -3,10 +3,10 @@ parameters:
 
 services:
     tms_rest.entity_handler:
-        class: %tms_rest.entity_handler.class%
+        class: '%tms_rest.entity_handler.class%'
         abstract: true
         arguments:
-            - @doctrine
-            - @validator
-            - @event_dispatcher
+            - "@doctrine"
+            - "@validator"
+            - "@event_dispatcher"
             - null
