@@ -14,7 +14,7 @@ services:
         arguments: ['%tms_rest.configuration%']
 
     tms_rest.criteria_builder:
-        class: %tms_rest.criteria_builder.class%
+        class: '%tms_rest.criteria_builder.class%'
         arguments: ['%tms_rest.configuration%']
 
     tms_rest.sort_builder:
