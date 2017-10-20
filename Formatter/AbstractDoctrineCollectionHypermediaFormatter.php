@@ -12,6 +12,7 @@ namespace Tms\Bundle\RestBundle\Formatter;
 
 use Symfony\Component\Routing\Router;
 use Symfony\Component\Config\Loader\LoaderInterface;
+use Doctrine\Common\Inflector\Inflector;
 use JMS\Serializer\Serializer;
 use Tms\Bundle\RestBundle\Request\ParamReaderProviderInterface;
 use Tms\Bundle\RestBundle\Request\RequestProviderInterface;
@@ -250,8 +251,14 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         ));
 
         if(!$this->itemRoutes) {
+            // Build singular route
+            $routeNameParts = explode('_', $this->currentRouteName);
+            $singular = Inflector::singularize(end($routeNameParts));
+            $routeNameParts[key($routeNameParts)] = $singular;
+            $routeName = implode('_', $routeNameParts);
+
             return $this->router->generate(
-                $this->currentRouteName,
+                $routeName,
                 array(
                     '_format' => $this->format,
                     $this->getClassIdentifier($itemNamespace) => $object->$getKeyMethod(),
