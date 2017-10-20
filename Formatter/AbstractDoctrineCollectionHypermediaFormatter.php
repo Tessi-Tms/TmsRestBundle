@@ -250,10 +250,13 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
         ));
 
         if(!$this->itemRoutes) {
-            return sprintf("%s/%s.%s",
-                $this->router->generate($this->currentRouteName, array(), true),
-                $object->$getKeyMethod(),
-                $this->format
+            return $this->router->generate(
+                $this->currentRouteName,
+                array(
+                    '_format' => $this->format,
+                    $this->getClassIdentifier($itemNamespace) => $object->$getKeyMethod(),
+                ),
+                true
             );
         } else {
             return $this->router->generate(
