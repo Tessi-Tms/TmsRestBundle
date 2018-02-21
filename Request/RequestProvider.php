@@ -5,7 +5,7 @@ namespace Tms\Bundle\RestBundle\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * RequestProvider is a basic implementation of a 
+ * RequestProvider is a basic implementation of a
  * provider of request.
  *
  * @author Thomas Prelot <thomas.prelot@tessi.fr>
@@ -34,6 +34,6 @@ class RequestProvider implements RequestProviderInterface
      */
     public function provide()
     {
-        return $this->container->get('request');
+        return $this->container->get('request_stack')->getCurrentRequest();
     }
 }
