@@ -263,7 +263,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                     '_format' => $this->format,
                     $this->getClassIdentifier($itemNamespace) => $object->$getKeyMethod(),
                 ),
-                true
+                Router::ABSOLUTE_URL
             );
         } else {
             return $this->router->generate(
@@ -275,7 +275,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                         $this->getClassIdentifier($itemNamespace) => $object->$getKeyMethod()
                     )
                 ),
-                true
+                Router::ABSOLUTE_URL
             );
         }
 
@@ -405,7 +405,7 @@ abstract class AbstractDoctrineCollectionHypermediaFormatter extends AbstractDoc
                 ),
                 $this->extraQuery
             ),
-            true
+            Router::ABSOLUTE_URL
         );
     }
 
