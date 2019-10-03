@@ -149,7 +149,7 @@ class DoctrineItemHypermediaFormatter extends AbstractDoctrineHypermediaFormatte
                 $this->routeParameters,
                 $parameters
             ),
-            true
+            Router::ABSOLUTE_URL
         );
     }
 
